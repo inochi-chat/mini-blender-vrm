@@ -1,0 +1,147 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <title>Mini Blender VRM</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #20232a;
+      color: white;
+      font-family: sans-serif;
+    }
+    header {
+      padding: 14px;
+      background: #303640;
+      font-weight: bold;
+    }
+    #toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 12px;
+      border: 0;
+      border-radius: 8px;
+      background: #5267d9;
+      color: white;
+      font-size: 14px;
+    }
+    #viewport {
+      height: 65dvh;
+      min-height: 300px;
+      background: #17191f;
+      position: relative;
+      overflow: hidden;
+    }
+    #status { padding: 12px; color: #cbd5e1; }
+    input { display: none; }
+  </style>
+</head>
+<body>
+  <header>Mini Blender VRM</header>
+  <div id="toolbar">
+    <button id="load">VRMを読み込む</button>
+    <button id="rotate">回転をリセット</button>
+    <input id="file" type="file" accept=".vrm">
+  </div>
+  <div id="viewport"></div>
+  <div id="status">VRMモデルを読み込んでください。</div>
+
+  <script type="module">
+    import * as THREE from
+      'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+    import { GLTFLoader } from
+      'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
+    import { VRMLoaderPlugin } from
+      'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.min.js';
+
+    const viewport = document.querySelector('#viewport');
+    const status = document.querySelector('#status');
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x252933);
+
+    const camera = new THREE.PerspectiveCamera(
+      35, viewport.clientWidth / viewport.clientHeight,
+      0.1, 100
+    );
+    camera.position.set(0, 1.3, 3.5);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true, alpha: false
+    });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+    viewport.appendChild(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x555566, 2));
+    const light = new THREE.DirectionalLight(0xffffff, 2);
+    light.position.set(1, 3, 4);
+    scene.add(light);
+
+    const grid = new THREE.GridHelper(10, 20);
+    scene.add(grid);
+
+    let currentVRM = null;
+
+    const loader = new GLTFLoader();
+    loader.register(parser => new VRMLoaderPlugin(parser));
+
+    document.querySelector('#load').onclick = () => {
+      document.querySelector('#file').click();
+    };
+
+    document.querySelector('#file').onchange = async event => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      status.textContent = '読み込み中...';
+      try {
+        const url = URL.createObjectURL(file);
+        const gltf = await loader.loadAsync(url);
+        URL.revokeObjectURL(url);
+
+        if (!gltf.userData.vrm) {
+          throw new Error('VRMとして認識できませんでした');
+        }
+
+        if (currentVRM) scene.remove(currentVRM.scene);
+        currentVRM = gltf.userData.vrm;
+        scene.add(currentVRM.scene);
+        status.textContent = 'VRM読み込み成功！';
+      } catch (error) {
+        status.textContent = '読み込み失敗：' + error.message;
+      }
+    };
+
+    document.querySelector('#rotate').onclick = () => {
+      if (currentVRM) currentVRM.scene.rotation.y = 0;
+      camera.position.set(0, 1.3, 3.5);
+      camera.lookAt(0, 1, 0);
+    };
+
+    function resize() {
+      const w = viewport.clientWidth;
+      const h = viewport.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    new ResizeObserver(resize).observe(viewport);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (currentVRM) currentVRM.update(1 / 60);
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

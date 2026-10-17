@@ -6,82 +6,101 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1">
   <title>Mini Blender VRM</title>
+
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       background: #20232a;
       color: white;
       font-family: sans-serif;
     }
+
     header {
-      padding: 14px;
+      padding: 16px;
       background: #303640;
+      font-size: 22px;
       font-weight: bold;
     }
+
     #toolbar {
       display: flex;
-      gap: 8px;
-      padding: 10px;
       flex-wrap: wrap;
-    }
-    button {
+      align-items: center;
+      gap: 10px;
       padding: 12px;
+    }
+
+    button, .file-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 13px;
       border: 0;
       border-radius: 8px;
       background: #5267d9;
       color: white;
+      font-size: 16px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    #file {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      color: white;
       font-size: 14px;
     }
-    #viewport {
-      height: 65dvh;
-      min-height: 300px;
-      background: #17191f;
-      position: relative;
-      overflow: hidden;
+
+    #debug {
+      width: 100%;
+      margin: 4px 0;
+      overflow-wrap: anywhere;
+      color: #b9d7ff;
+      font-size: 14px;
     }
-    #status { padding: 12px; color: #cbd5e1; }
-    
-.file-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-  border-radius: 8px;
-  background: #5267d9;
-  color: white;
-  font-size: 14px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
 
-#file {
-  display: block;
-  width: 100%;
-  color: white;
-  font-size: 14px;
-  padding: 8px;
-}
+    #viewport {
+      width: 100%;
+      height: 60dvh;
+      min-height: 320px;
+      background: #17191f;
+      overflow: hidden;
+      touch-action: pan-y;
+    }
 
+    #viewport canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #status {
+      padding: 14px;
+      overflow-wrap: anywhere;
+      color: #cbd5e1;
+    }
   </style>
 </head>
+
 <body>
   <header>Mini Blender VRM</header>
-  
-<div id="toolbar">
-  <label for="file" class="file-button">
-    VRMを読み込む
-  </label>
-  <button id="rotate" type="button">
-    回転をリセット
-  </button>
-  <input
-    id="file"
-    type="file"
-    accept=".vrm,model/gltf-binary,application/octet-stream"
-　 >
-  <p id="debug">ページ起動確認</p>
-</div>
+
+  <div id="toolbar">
+    <label for="file" class="file-button">
+      VRMを読み込む
+    </label>
+
+    <button id="rotate" type="button">
+      回転をリセット
+    </button>
+
+    <input id="file" type="file" accept=".vrm">
+
+    <p id="debug">JavaScript起動待ち...</p>
+  </div>
 
   <div id="viewport"></div>
   <div id="status">VRMモデルを読み込んでください。</div>
@@ -89,180 +108,205 @@
   <script type="module">
     import * as THREE from
       'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
     import { GLTFLoader } from
       'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
+
     import { VRMLoaderPlugin } from
       'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.min.js';
 
     const viewport = document.querySelector('#viewport');
     const status = document.querySelector('#status');
-　　　
-const debugFile = document.querySelector('#file');
-
-
-const debugFile = document.querySelector('#file');
-const debugText = document.querySelector('#debug');
-
-debugText.textContent = '入力欄の監視を開始しました';
-
-debugFile.addEventListener('click', () => {
-  debugText.textContent = 'ファイル選択画面を開きました';
-});
-
-debugFile.addEventListener('change', () => {
-  const file = debugFile.files?.[0];
-
-  debugText.textContent = file
-    ? '選択イベント成功：' + file.name
-    : 'イベント発生：ファイルは未選択';
-});
-
-debugFile.addEventListener('cancel', () => {
-  debugText.textContent = 'ファイル選択がキャンセルされました';
-});
-
-  document.querySelector('#debug').textContent =
-    'ファイル選択イベント成功：' +
-    (debugFile.files?.[0]?.name || 'ファイルなし');
-});
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x252933);
-
-    const camera = new THREE.PerspectiveCamera(
-      35, viewport.clientWidth / viewport.clientHeight,
-      0.1, 100
-    );
-    camera.position.set(0, 1.3, 3.5);
-
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true, alpha: false
-    });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-    viewport.appendChild(renderer.domElement);
-
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x555566, 2));
-    const light = new THREE.DirectionalLight(0xffffff, 2);
-    light.position.set(1, 3, 4);
-    scene.add(light);
-
-    const grid = new THREE.GridHelper(10, 20);
-    scene.add(grid);
+    const debug = document.querySelector('#debug');
+    const fileInput = document.querySelector('#file');
 
     let currentVRM = null;
+    let modelCenter = new THREE.Vector3(0, 1, 0);
+    let defaultCameraPosition = new THREE.Vector3(0, 1, 4);
 
-    const loader = new GLTFLoader();
-    loader.register(parser => new VRMLoaderPlugin(parser));
+    try {
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x252933);
 
-    
+      const camera = new THREE.PerspectiveCamera(
+        35,
+        viewport.clientWidth / viewport.clientHeight,
+        0.01,
+        1000
+      );
 
-    
-document.querySelector('#file').onchange = async event => {
-  const file = event.target.files?.[0];
+      camera.position.copy(defaultCameraPosition);
+      camera.lookAt(modelCenter);
 
-  if (!file) {
-    status.textContent = 'ファイルが選択されていません';
-    return;
-  }
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: false
+      });
 
-  status.textContent = 'ファイル選択成功：' + file.name;
+      renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio || 1, 2)
+      );
 
-  let url = null;
+      renderer.setSize(
+        viewport.clientWidth,
+        viewport.clientHeight
+      );
 
-  try {
-    status.textContent = 'VRM読み込み中...';
+      viewport.appendChild(renderer.domElement);
 
-    url = URL.createObjectURL(file);
-    const gltf = await loader.loadAsync(url);
+      scene.add(
+        new THREE.HemisphereLight(0xffffff, 0x666677, 2)
+      );
 
-    const vrm = gltf.userData.vrm;
+      const light = new THREE.DirectionalLight(0xffffff, 2);
+      light.position.set(2, 4, 5);
+      scene.add(light);
 
-    if (!vrm) {
-      throw new Error('VRMモデルとして認識できません');
-    }
+      const grid = new THREE.GridHelper(10, 20);
+      scene.add(grid);
 
-    if (currentVRM) {
-      scene.remove(currentVRM.scene);
-    }
+      const loader = new GLTFLoader();
+      loader.register(
+        parser => new VRMLoaderPlugin(parser)
+      );
 
-    currentVRM = vrm;
-    scene.add(vrm.scene);
+      debug.textContent = 'JavaScript起動成功';
 
-    // モデルの大きさと位置を調べる
-    const box = new THREE.Box3().setFromObject(vrm.scene);
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
+      fileInput.addEventListener('change', async () => {
+        const file = fileInput.files?.[0];
 
-    if (size.length() === 0) {
-      throw new Error('モデルの大きさを取得できません');
-    }
-
-    // モデルの中央にカメラを向ける
-    const maxSize = Math.max(size.x, size.y, size.z);
-    const distance = maxSize * 2.5;
-
-    camera.position.set(
-      center.x,
-      center.y,
-      center.z + distance
-    );
-
-    camera.near = Math.max(maxSize / 1000, 0.001);
-    camera.far = Math.max(maxSize * 100, 100);
-    camera.updateProjectionMatrix();
-    camera.lookAt(center);
-
-    status.textContent = 'VRM読み込み成功！';
-
-  } catch (error) {
-    console.error('VRM読み込みエラー:', error);
-    status.textContent =
-      '読み込み失敗：' + (error.message || error);
-  } finally {
-    if (url) URL.revokeObjectURL(url);
-  }
-};
-
-      try {
-        const url = URL.createObjectURL(file);
-        const gltf = await loader.loadAsync(url);
-        URL.revokeObjectURL(url);
-
-        if (!gltf.userData.vrm) {
-          throw new Error('VRMとして認識できませんでした');
+        if (!file) {
+          status.textContent = 'ファイルが選択されていません';
+          return;
         }
 
-        if (currentVRM) scene.remove(currentVRM.scene);
-        currentVRM = gltf.userData.vrm;
-        scene.add(currentVRM.scene);
-        status.textContent = 'VRM読み込み成功！';
-      } catch (error) {
-        status.textContent = '読み込み失敗：' + error.message;
+        debug.textContent = '選択イベント成功：' + file.name;
+        status.textContent = 'VRM読み込み中...';
+
+        let url = null;
+        let loadedVRM = null;
+
+        try {
+          url = URL.createObjectURL(file);
+
+          const gltf = await loader.loadAsync(url);
+          loadedVRM = gltf.userData.vrm;
+
+          if (!loadedVRM) {
+            throw new Error(
+              'VRMとして認識できません。VRM形式を確認してください。'
+            );
+          }
+
+          const newScene = loadedVRM.scene;
+          scene.add(newScene);
+
+          // モデルの位置と大きさを取得
+          newScene.updateMatrixWorld(true);
+
+          const box = new THREE.Box3()
+            .setFromObject(newScene);
+
+          if (box.isEmpty()) {
+            scene.remove(newScene);
+            throw new Error('モデルの形状を取得できません');
+          }
+
+          const size = box.getSize(new THREE.Vector3());
+          modelCenter = box.getCenter(new THREE.Vector3());
+
+          const maxSize = Math.max(
+            size.x, size.y, size.z
+          );
+
+          if (!Number.isFinite(maxSize) || maxSize <= 0) {
+            scene.remove(newScene);
+            throw new Error('モデルのサイズが不正です');
+          }
+
+          // カメラをモデル全体が入る位置に調整
+          const distance =
+            (maxSize / 2) /
+            Math.tan(THREE.MathUtils.degToRad(35 / 2)) *
+            1.4;
+
+          defaultCameraPosition.set(
+            modelCenter.x,
+            modelCenter.y,
+            modelCenter.z + distance
+          );
+
+          camera.position.copy(defaultCameraPosition);
+          camera.near = Math.max(maxSize / 1000, 0.001);
+          camera.far = Math.max(maxSize * 100, 100);
+          camera.updateProjectionMatrix();
+          camera.lookAt(modelCenter);
+
+          if (currentVRM) {
+            scene.remove(currentVRM.scene);
+          }
+
+          currentVRM = loadedVRM;
+
+          debug.textContent = 'モデル表示処理完了';
+          status.textContent = 'VRM読み込み成功！';
+
+        } catch (error) {
+          console.error(error);
+          status.textContent =
+            '読み込み失敗：' +
+            (error?.message || String(error));
+          debug.textContent = '読み込みエラー';
+        } finally {
+          if (url) URL.revokeObjectURL(url);
+        }
+      });
+
+      document.querySelector('#rotate')
+        .addEventListener('click', () => {
+          if (currentVRM) {
+            currentVRM.scene.rotation.set(0, 0, 0);
+          }
+
+          camera.position.copy(defaultCameraPosition);
+          camera.lookAt(modelCenter);
+          status.textContent = currentVRM
+            ? 'カメラをリセットしました'
+            : 'VRMモデルを読み込んでください。';
+        });
+
+      function resize() {
+        const width = viewport.clientWidth;
+        const height = viewport.clientHeight;
+
+        if (!width || !height) return;
+
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
       }
-    };
 
-    document.querySelector('#rotate').onclick = () => {
-      if (currentVRM) currentVRM.scene.rotation.y = 0;
-      camera.position.set(0, 1.3, 3.5);
-      camera.lookAt(0, 1, 0);
-    };
+      window.addEventListener('resize', resize);
 
-    function resize() {
-      const w = viewport.clientWidth;
-      const h = viewport.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      function animate() {
+        requestAnimationFrame(animate);
+
+        if (currentVRM) {
+          currentVRM.update(1 / 60);
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+    } catch (error) {
+      console.error(error);
+      debug.textContent = '起動エラー';
+      status.textContent =
+        '3D画面の起動に失敗：' +
+        (error?.message || String(error));
     }
-    new ResizeObserver(resize).observe(viewport);
-
-    function animate() {
-      requestAnimationFrame(animate);
-      if (currentVRM) currentVRM.update(1 / 60);
-      renderer.render(scene, camera);
-    }
-    animate();
   </script>
 </body>
 </html>

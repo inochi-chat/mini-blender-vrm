@@ -78,7 +78,7 @@
       min-height: 320px;
       background: #17191f;
       overflow: hidden;
-      touch-action: pan-y;
+      touch-action: none;
     }
 
     #viewport canvas {
@@ -122,6 +122,11 @@
     import { GLTFLoader } from
       'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
 
+　　　
+　　import { OrbitControls } from
+      'three/addons/controls/OrbitControls.js';
+
+    
     import { VRMLoaderPlugin } from
       'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.min.js';
 
@@ -147,6 +152,25 @@
 
       camera.position.copy(defaultCameraPosition);
       camera.lookAt(modelCenter);
+      
+　　　　controls.target.copy(modelCenter);
+　　　　controls.update();
+　　　　controls.saveState();
+
+      
+　　　　const controls = new OrbitControls(camera, renderer.domElement);
+
+　　　　controls.enableDamping = true;
+　　　　controls.dampingFactor = 0.08;
+
+　　　　controls.enableZoom = true;
+　　　　controls.minDistance = 0.2;
+　　　　controls.maxDistance = 30;
+
+　　　　controls.enablePan = false;
+　　　　controls.target.copy(modelCenter);
+　　　　controls.update();
+
 
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -272,8 +296,15 @@
         }
       });
 
-      document.querySelector('#rotate')
+      
+　　　　document.querySelector('#rotate')
         .addEventListener('click', () => {
+         controls.reset();
+         status.textContent = currentVRM  
+           ? 'カメラをリセットしました'
+           : 'VRMモデルを読み込んでください。';
+        });
+
           if (currentVRM) {
             currentVRM.scene.rotation.set(0, 0, 0);
           }
@@ -300,7 +331,7 @@
 
       function animate() {
         requestAnimationFrame(animate);
-
+　　　　controls.update();
         if (currentVRM) {
           currentVRM.update(1 / 60);
         }

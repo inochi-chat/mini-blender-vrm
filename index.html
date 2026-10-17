@@ -125,9 +125,7 @@
     const loader = new GLTFLoader();
     loader.register(parser => new VRMLoaderPlugin(parser));
 
-    document.querySelector('#load').onclick = () => {
-      document.querySelector('#file').click();
-    };
+    
 
     document.querySelector('#file').onchange = async event => {
       const file = event.target.files[0];

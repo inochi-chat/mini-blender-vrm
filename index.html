@@ -79,7 +79,8 @@
     id="file"
     type="file"
     accept=".vrm,model/gltf-binary,application/octet-stream"
-  >
+　 >
+  <p id="debug">ページ起動確認</p>
 </div>
 
   <div id="viewport"></div>
@@ -95,6 +96,14 @@
 
     const viewport = document.querySelector('#viewport');
     const status = document.querySelector('#status');
+　　　
+const debugFile = document.querySelector('#file');
+
+debugFile.addEventListener('change', () => {
+  document.querySelector('#debug').textContent =
+    'ファイル選択イベント成功：' +
+    (debugFile.files?.[0]?.name || 'ファイルなし');
+});
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x252933);

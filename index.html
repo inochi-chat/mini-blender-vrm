@@ -99,7 +99,28 @@
 　　　
 const debugFile = document.querySelector('#file');
 
+
+const debugFile = document.querySelector('#file');
+const debugText = document.querySelector('#debug');
+
+debugText.textContent = '入力欄の監視を開始しました';
+
+debugFile.addEventListener('click', () => {
+  debugText.textContent = 'ファイル選択画面を開きました';
+});
+
 debugFile.addEventListener('change', () => {
+  const file = debugFile.files?.[0];
+
+  debugText.textContent = file
+    ? '選択イベント成功：' + file.name
+    : 'イベント発生：ファイルは未選択';
+});
+
+debugFile.addEventListener('cancel', () => {
+  debugText.textContent = 'ファイル選択がキャンセルされました';
+});
+
   document.querySelector('#debug').textContent =
     'ファイル選択イベント成功：' +
     (debugFile.files?.[0]?.name || 'ファイルなし');

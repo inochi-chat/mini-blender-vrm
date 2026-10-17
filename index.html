@@ -127,11 +127,73 @@
 
     
 
-    document.querySelector('#file').onchange = async event => {
-      const file = event.target.files[0];
-      if (!file) return;
+    
+document.querySelector('#file').onchange = async event => {
+  const file = event.target.files?.[0];
 
-      status.textContent = '読み込み中...';
+  if (!file) {
+    status.textContent = 'ファイルが選択されていません';
+    return;
+  }
+
+  status.textContent = 'ファイル選択成功：' + file.name;
+
+  let url = null;
+
+  try {
+    status.textContent = 'VRM読み込み中...';
+
+    url = URL.createObjectURL(file);
+    const gltf = await loader.loadAsync(url);
+
+    const vrm = gltf.userData.vrm;
+
+    if (!vrm) {
+      throw new Error('VRMモデルとして認識できません');
+    }
+
+    if (currentVRM) {
+      scene.remove(currentVRM.scene);
+    }
+
+    currentVRM = vrm;
+    scene.add(vrm.scene);
+
+    // モデルの大きさと位置を調べる
+    const box = new THREE.Box3().setFromObject(vrm.scene);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    if (size.length() === 0) {
+      throw new Error('モデルの大きさを取得できません');
+    }
+
+    // モデルの中央にカメラを向ける
+    const maxSize = Math.max(size.x, size.y, size.z);
+    const distance = maxSize * 2.5;
+
+    camera.position.set(
+      center.x,
+      center.y,
+      center.z + distance
+    );
+
+    camera.near = Math.max(maxSize / 1000, 0.001);
+    camera.far = Math.max(maxSize * 100, 100);
+    camera.updateProjectionMatrix();
+    camera.lookAt(center);
+
+    status.textContent = 'VRM読み込み成功！';
+
+  } catch (error) {
+    console.error('VRM読み込みエラー:', error);
+    status.textContent =
+      '読み込み失敗：' + (error.message || error);
+  } finally {
+    if (url) URL.revokeObjectURL(url);
+  }
+};
+
       try {
         const url = URL.createObjectURL(file);
         const gltf = await loader.loadAsync(url);

@@ -46,11 +46,21 @@
 </head>
 <body>
   <header>Mini Blender VRM</header>
-  <div id="toolbar">
-    <button id="load">VRMを読み込む</button>
-    <button id="rotate">回転をリセット</button>
-    <input id="file" type="file" accept=".vrm">
-  </div>
+  
+<div id="toolbar">
+  <label for="file" class="file-button">
+    VRMを読み込む
+  </label>
+  <button id="rotate" type="button">
+    回転をリセット
+  </button>
+  <input
+    id="file"
+    type="file"
+    accept=".vrm,model/gltf-binary"
+  >
+</div>
+
   <div id="viewport"></div>
   <div id="status">VRMモデルを読み込んでください。</div>
 

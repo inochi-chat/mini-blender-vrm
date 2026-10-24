@@ -17,25 +17,30 @@
 
 <style>
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
   background: #20232a;
   color: white;
   font-family: sans-serif;
 }
+
 header {
   padding: 16px;
   background: #303640;
   font-size: 21px;
   font-weight: bold;
 }
+
 section {
   margin: 12px;
   padding: 14px;
   background: #303640;
   border-radius: 12px;
 }
+
 h2 { font-size: 17px; margin: 0 0 12px; }
+
 button, .file-button {
   display: inline-flex;
   align-items: center;
@@ -49,14 +54,17 @@ button, .file-button {
   cursor: pointer;
   touch-action: manipulation;
 }
-button:active { opacity: .75; }
+
 button:disabled { opacity: .5; }
+
 .controls {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
+
 #settingsFile { display: none; }
+
 #viewport {
   width: 100%;
   height: 55dvh;
@@ -65,26 +73,32 @@ button:disabled { opacity: .5; }
   overflow: hidden;
   touch-action: none;
 }
+
 #viewport canvas {
   display: block;
   width: 100%;
   height: 100%;
 }
+
 #status {
   padding: 12px;
   color: #cbd5e1;
   overflow-wrap: anywhere;
   font-size: 14px;
 }
+
 .field {
   display: grid;
-  grid-template-columns: 78px minmax(0, 1fr);
+  grid-template-columns: 100px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   margin: 12px 0;
 }
+
 .field label { font-size: 14px; }
-.field input {
+
+.field input,
+.field select {
   width: 100%;
   min-width: 0;
   padding: 10px;
@@ -94,14 +108,20 @@ button:disabled { opacity: .5; }
   color: white;
   font-size: 16px;
 }
+
+.field input[type="color"] {
+  height: 48px;
+  padding: 4px;
+}
+
 .note {
   color: #b8c4d8;
   font-size: 13px;
   line-height: 1.7;
 }
+
 .primary { background: #16866b; }
 .secondary { background: #586477; }
-.danger { background: #a43d50; }
 </style>
 </head>
 
@@ -151,60 +171,93 @@ button:disabled { opacity: .5; }
   </div>
   <div class="field">
     <label for="modelScale">大きさ</label>
-    <input id="modelScale" type="number" step="0.1" min="0.1" max="10" value="1">
+    <input id="modelScale" type="number" step="0.1"
+      min="0.1" max="10" value="1">
   </div>
 
   <div class="controls">
     <button id="apply" type="button">数値を反映</button>
-    <button id="modelReset" class="secondary" type="button">モデルを初期化</button>
+    <button id="modelReset" class="secondary" type="button">
+      モデルを初期化
+    </button>
   </div>
 </section>
 
 <section>
-  <h2>③ 保存・復元</h2>
+  <h2>③ パーツ編集・色変更</h2>
+  <p class="note">
+    モデル内のメッシュを選んで色を変更するよ。
+    髪や服などが別々のメッシュになっている場合に便利だよ。
+  </p>
+
+  <div class="field">
+    <label for="meshSelect">パーツ</label>
+    <select id="meshSelect" disabled>
+      <option value="">モデルを読み込んでね</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="partColor">変更する色</label>
+    <input id="partColor" type="color" value="#ffffff" disabled>
+  </div>
+
+  <div class="controls">
+    <button id="applyColor" type="button" disabled>色を適用</button>
+    <button id="resetColor" class="secondary" type="button" disabled>
+      元の色に戻す
+    </button>
+  </div>
+
+  <p class="note">
+    ※ メッシュに複数のマテリアルがある場合は、そのメッシュ内の
+    色を変更できるマテリアルに色を適用するよ。
+    テクスチャの模様自体を描き換える機能ではないよ。
+  </p>
+</section>
+
+<section>
+  <h2>④ 保存・復元</h2>
   <p class="note">
     設定を保存すると位置・回転・大きさとカメラ設定をJSONに保存するよ。
     設定を読み込むとその状態に戻せるよ。
     画像を保存すると現在の画面をPNGにするよ。
   </p>
+
   <div class="controls">
-    <button id="saveSettings" class="primary" type="button">設定を保存</button>
+    <button id="saveSettings" class="primary" type="button">
+      設定を保存
+    </button>
     <label for="settingsFile" class="file-button">設定を読み込む</label>
     <button id="saveImage" type="button">画像を保存</button>
   </div>
+
   <input id="settingsFile" type="file" accept=".json,application/json">
 </section>
 
 <section>
-  <h2>④ VRM書き出し</h2>
+  <h2>⑤ VRM書き出し</h2>
   <p class="note">
-    読み込んだモデルをVRM 1.0形式で書き出すよ。
-    処理が終わるまで画面を閉じないでね。
+    編集したモデルをVRM 1.0形式で書き出すよ。
+    保存後はもう一度読み込んで確認してね。
   </p>
   <div class="controls">
     <button id="exportVRM" class="primary" type="button">
       VRMを書き出す（.vrm）
     </button>
   </div>
-  <p class="note">
-    書き出した後は、保存したVRMを読み込み直して確認してね。
-    外部ライブラリの状態によっては書き出しに失敗する場合があるよ。
-  </p>
 </section>
 
 <section>
-  <h2>⑤ 操作方法</h2>
+  <h2>⑥ 操作方法</h2>
   <p class="note">
     ・1本指：カメラを回転<br>
     ・2本指：拡大・縮小<br>
-    ・モデル編集：数値で位置・回転・大きさを変更<br>
+    ・モデル編集：位置・回転・大きさを変更<br>
+    ・パーツ編集：選択したメッシュの色を変更<br>
     ・設定保存：編集設定をJSONで保存<br>
-    ・画像保存：表示画面をPNGで保存<br>
-    ・VRM書き出し：モデルをVRM形式で保存
-  </p>
-  <p class="note">
-    ※ JSONは編集設定の保存用で、モデル自体を保存するものではないよ。
-    この画面では衣装やメッシュ形状の直接編集はまだできないよ。
+    ・画像保存：現在の画面をPNGで保存<br>
+    ・VRM書き出し：VRM形式で保存
   </p>
 </section>
 
@@ -224,10 +277,16 @@ const fileInput = document.querySelector('#file');
 const settingsFile = document.querySelector('#settingsFile');
 const exportButton = document.querySelector('#exportVRM');
 
+const meshSelect = document.querySelector('#meshSelect');
+const partColor = document.querySelector('#partColor');
+const applyColorButton = document.querySelector('#applyColor');
+const resetColorButton = document.querySelector('#resetColor');
+
 let currentVRM = null;
+let partMeshes = [];
+let originalColors = new Map();
 let modelSize = 2;
 let originalCenter = new THREE.Vector3(0, 1, 0);
-let initialDistance = 4;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x252933);
@@ -253,7 +312,6 @@ scene.add(new THREE.HemisphereLight(0xffffff, 0x666677, 2));
 const light = new THREE.DirectionalLight(0xffffff, 2);
 light.position.set(2, 4, 5);
 scene.add(light);
-
 scene.add(new THREE.GridHelper(10, 20));
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -294,12 +352,12 @@ function getTransform() {
   };
 }
 
-function updateFields(transform) {
-  fields.x.value = transform.x;
-  fields.y.value = transform.y;
-  fields.z.value = transform.z;
-  fields.rotY.value = transform.rotY;
-  fields.scale.value = transform.scale;
+function updateFields(t) {
+  fields.x.value = t.x;
+  fields.y.value = t.y;
+  fields.z.value = t.z;
+  fields.rotY.value = t.rotY;
+  fields.scale.value = t.scale;
 }
 
 function applyTransform() {
@@ -313,7 +371,6 @@ function applyTransform() {
   currentVRM.scene.rotation.y = THREE.MathUtils.degToRad(t.rotY);
   currentVRM.scene.scale.setScalar(t.scale);
   currentVRM.scene.updateMatrixWorld(true);
-
   status.textContent = 'モデルの編集内容を反映したよ。';
   return true;
 }
@@ -337,13 +394,14 @@ function fitCamera() {
 
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
+
   modelSize = Math.max(size.x, size.y, size.z, 0.1);
   originalCenter.copy(center);
 
-  initialDistance = (modelSize / 2) /
+  const distance = (modelSize / 2) /
     Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.5;
 
-  camera.position.set(center.x, center.y, center.z + initialDistance);
+  camera.position.set(center.x, center.y, center.z + distance);
   camera.near = Math.max(modelSize / 1000, 0.001);
   camera.far = Math.max(modelSize * 100, 100);
   camera.updateProjectionMatrix();
@@ -352,6 +410,153 @@ function fitCamera() {
   controls.update();
   controls.saveState();
 }
+
+function getMaterials(mesh) {
+  if (!mesh.material) return [];
+  return Array.isArray(mesh.material)
+    ? mesh.material
+    : [mesh.material];
+}
+
+function clearPartEditor() {
+  partMeshes = [];
+  originalColors = new Map();
+  meshSelect.innerHTML = '';
+
+  const option = document.createElement('option');
+  option.value = '';
+  option.textContent = '色を変更できるパーツがありません';
+  meshSelect.appendChild(option);
+
+  meshSelect.disabled = true;
+  partColor.disabled = true;
+  applyColorButton.disabled = true;
+  resetColorButton.disabled = true;
+}
+
+function setupPartEditor(vrm) {
+  clearPartEditor();
+
+  const candidates = [];
+
+  vrm.scene.traverse(object => {
+    if (!object.isMesh || !object.material) return;
+
+    // マテリアルを複製し、別メッシュへの意図しない色の影響を防ぐ
+    const oldMaterials = getMaterials(object);
+    const newMaterials = oldMaterials.map(material => material.clone());
+
+    object.material = Array.isArray(object.material)
+      ? newMaterials
+      : newMaterials[0];
+
+    const colorMaterials = newMaterials.filter(material =>
+      material.color && material.color.isColor
+    );
+
+    if (colorMaterials.length === 0) return;
+
+    const entry = {
+      mesh: object,
+      materials: colorMaterials,
+      name: object.name || ''
+    };
+
+    originalColors.set(
+      object,
+      colorMaterials.map(material => material.color.clone())
+    );
+
+    candidates.push(entry);
+  });
+
+  partMeshes = candidates;
+
+  if (partMeshes.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = '色を変更できるパーツがありません';
+    meshSelect.appendChild(option);
+    return;
+  }
+
+  partMeshes.forEach((entry, index) => {
+    const option = document.createElement('option');
+    option.value = String(index);
+
+    const label = entry.name
+      ? entry.name
+      : 'Mesh ' + (index + 1);
+
+    option.textContent = (index + 1) + '. ' + label;
+    meshSelect.appendChild(option);
+  });
+
+  meshSelect.disabled = false;
+  partColor.disabled = false;
+  applyColorButton.disabled = false;
+  resetColorButton.disabled = false;
+
+  meshSelect.value = '0';
+  updateColorPicker();
+}
+
+function getSelectedEntry() {
+  const index = Number(meshSelect.value);
+  if (!Number.isInteger(index)) return null;
+  return partMeshes[index] || null;
+}
+
+function updateColorPicker() {
+  const entry = getSelectedEntry();
+  if (!entry || entry.materials.length === 0) return;
+
+  // カラーピッカーには最初の対象マテリアルの色を表示
+  partColor.value = '#' + entry.materials[0].color.getHexString();
+}
+
+function applyPartColor() {
+  const entry = getSelectedEntry();
+
+  if (!entry) {
+    status.textContent = '色を変更するパーツを選んでね。';
+    return;
+  }
+
+  const color = new THREE.Color(partColor.value);
+
+  entry.materials.forEach(material => {
+    material.color.copy(color);
+    material.needsUpdate = true;
+  });
+
+  entry.mesh.updateMatrixWorld(true);
+  status.textContent = '選択したパーツの色を変更したよ。';
+}
+
+function resetPartColor() {
+  const entry = getSelectedEntry();
+
+  if (!entry) {
+    status.textContent = '色を戻すパーツを選んでね。';
+    return;
+  }
+
+  const colors = originalColors.get(entry.mesh);
+  if (!colors) return;
+
+  entry.materials.forEach((material, index) => {
+    if (colors[index]) material.color.copy(colors[index]);
+    material.needsUpdate = true;
+  });
+
+  updateColorPicker();
+  status.textContent = '選択したパーツを元の色に戻したよ。';
+}
+
+meshSelect.addEventListener('change', updateColorPicker);
+applyColorButton.addEventListener('click', applyPartColor);
+resetColorButton.addEventListener('click', resetPartColor);
 
 fileInput.addEventListener('change', async () => {
   const file = fileInput.files?.[0];
@@ -376,26 +581,30 @@ fileInput.addEventListener('change', async () => {
     newVRM.scene.updateMatrixWorld(true);
 
     const bounds = new THREE.Box3().setFromObject(newVRM.scene);
-
     if (bounds.isEmpty()) {
       throw new Error('モデルの形状を取得できませんでした。');
     }
 
     const oldVRM = currentVRM;
+
     scene.add(newVRM.scene);
     currentVRM = newVRM;
 
     if (oldVRM) scene.remove(oldVRM.scene);
 
     updateFields({ x: 0, y: 0, z: 0, rotY: 0, scale: 1 });
+    setupPartEditor(currentVRM);
     fitCamera();
 
-    status.textContent = '読み込み成功！ モデルを編集できるよ。';
+    status.textContent =
+      '読み込み成功！ モデルとパーツを編集できるよ。';
   } catch (error) {
     console.error(error);
+
     if (newVRM && newVRM !== currentVRM) {
       scene.remove(newVRM.scene);
     }
+
     status.textContent =
       '読み込み失敗：' + (error.message || String(error));
   } finally {
@@ -493,6 +702,7 @@ settingsFile.addEventListener('change', async () => {
       rotY: t.rotY,
       scale: t.scale
     });
+
     applyTransform();
 
     if (data.camera) {
@@ -533,6 +743,7 @@ document.querySelector('#saveImage').addEventListener('click', () => {
     }
 
     renderer.render(scene, camera);
+
     renderer.domElement.toBlob(blob => {
       if (!blob) {
         status.textContent = '画像を作成できませんでした。';

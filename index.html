@@ -50,6 +50,7 @@ button, .file-button {
   touch-action: manipulation;
 }
 button:active { opacity: .75; }
+button:disabled { opacity: .5; }
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -110,15 +111,16 @@ button:active { opacity: .75; }
 <section>
   <h2>① モデル読み込み</h2>
   <div class="controls">
-<input
-  id="file"
-  type="file"
-  accept=".vrm,.VRM,model/vrm,application/octet-stream,*/*"
-  style="display:block;width:100%;padding:12px;color:white;"
->
-    <button id="cameraReset" class="secondary" type="button">カメラリセット</button>
+    <input
+      id="file"
+      type="file"
+      accept=".vrm,.VRM,model/vrm,application/octet-stream,*/*"
+      style="display:block;width:100%;padding:12px;color:white;"
+    >
+    <button id="cameraReset" class="secondary" type="button">
+      カメラリセット
+    </button>
   </div>
-  <input id="file" type="file" accept=".vrm,model/vrm">
 </section>
 
 <div id="viewport"></div>
@@ -126,7 +128,10 @@ button:active { opacity: .75; }
 
 <section>
   <h2>② モデル編集</h2>
-  <p class="note">数値を変えるとモデルに反映されるよ。位置はX・Y・Z、回転はY軸を度数で指定するよ。</p>
+  <p class="note">
+    数値を変えるとモデルに反映されるよ。
+    位置はX・Y・Z、回転はY軸を度数で指定するよ。
+  </p>
 
   <div class="field">
     <label for="posX">位置 X</label>
@@ -158,9 +163,9 @@ button:active { opacity: .75; }
 <section>
   <h2>③ 保存・復元</h2>
   <p class="note">
-    「設定を保存」は位置・回転・大きさとカメラ設定をJSONファイルに保存するよ。
-    「設定を読み込む」でその状態に戻せるよ。
-    「画像を保存」は現在の画面をPNGにするよ。
+    設定を保存すると位置・回転・大きさとカメラ設定をJSONに保存するよ。
+    設定を読み込むとその状態に戻せるよ。
+    画像を保存すると現在の画面をPNGにするよ。
   </p>
   <div class="controls">
     <button id="saveSettings" class="primary" type="button">設定を保存</button>
@@ -171,16 +176,35 @@ button:active { opacity: .75; }
 </section>
 
 <section>
-  <h2>④ 操作方法</h2>
+  <h2>④ VRM書き出し</h2>
+  <p class="note">
+    読み込んだモデルをVRM 1.0形式で書き出すよ。
+    処理が終わるまで画面を閉じないでね。
+  </p>
+  <div class="controls">
+    <button id="exportVRM" class="primary" type="button">
+      VRMを書き出す（.vrm）
+    </button>
+  </div>
+  <p class="note">
+    書き出した後は、保存したVRMを読み込み直して確認してね。
+    外部ライブラリの状態によっては書き出しに失敗する場合があるよ。
+  </p>
+</section>
+
+<section>
+  <h2>⑤ 操作方法</h2>
   <p class="note">
     ・1本指：カメラを回転<br>
     ・2本指：拡大・縮小<br>
     ・モデル編集：数値で位置・回転・大きさを変更<br>
-    ・設定保存：編集状態をJSONで保存<br>
-    ・画像保存：表示画面をPNGで保存
+    ・設定保存：編集設定をJSONで保存<br>
+    ・画像保存：表示画面をPNGで保存<br>
+    ・VRM書き出し：モデルをVRM形式で保存
   </p>
   <p class="note">
-    ※ JSONは編集設定の保存用だよ。モデルの形状や衣装を変更済みVRMとして書き出す機能ではないよ。
+    ※ JSONは編集設定の保存用で、モデル自体を保存するものではないよ。
+    この画面では衣装やメッシュ形状の直接編集はまだできないよ。
   </p>
 </section>
 
@@ -191,10 +215,14 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRMLoaderPlugin } from
   'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.min.js';
 
+import { VRMExport } from
+  'https://cdn.jsdelivr.net/gh/Ringo3apples/vrm-exporter@main/src/VRMExporter.js';
+
 const viewport = document.querySelector('#viewport');
 const status = document.querySelector('#status');
 const fileInput = document.querySelector('#file');
 const settingsFile = document.querySelector('#settingsFile');
+const exportButton = document.querySelector('#exportVRM');
 
 let currentVRM = null;
 let modelSize = 2;
@@ -277,14 +305,17 @@ function updateFields(transform) {
 function applyTransform() {
   if (!currentVRM) {
     status.textContent = '先にVRMモデルを読み込んでね。';
-    return;
+    return false;
   }
 
   const t = getTransform();
   currentVRM.scene.position.set(t.x, t.y, t.z);
   currentVRM.scene.rotation.y = THREE.MathUtils.degToRad(t.rotY);
   currentVRM.scene.scale.setScalar(t.scale);
+  currentVRM.scene.updateMatrixWorld(true);
+
   status.textContent = 'モデルの編集内容を反映したよ。';
+  return true;
 }
 
 document.querySelector('#apply').addEventListener('click', applyTransform);
@@ -342,8 +373,8 @@ fileInput.addEventListener('change', async () => {
     newVRM.scene.position.set(0, 0, 0);
     newVRM.scene.rotation.set(0, 0, 0);
     newVRM.scene.scale.setScalar(1);
-
     newVRM.scene.updateMatrixWorld(true);
+
     const bounds = new THREE.Box3().setFromObject(newVRM.scene);
 
     if (bounds.isEmpty()) {
@@ -365,7 +396,8 @@ fileInput.addEventListener('change', async () => {
     if (newVRM && newVRM !== currentVRM) {
       scene.remove(newVRM.scene);
     }
-    status.textContent = '読み込み失敗：' + (error.message || String(error));
+    status.textContent =
+      '読み込み失敗：' + (error.message || String(error));
   } finally {
     if (url) URL.revokeObjectURL(url);
     fileInput.value = '';
@@ -404,17 +436,19 @@ function downloadBlob(blob, filename) {
   a.click();
   a.remove();
 
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
 
 document.querySelector('#saveSettings').addEventListener('click', () => {
   try {
-    applyTransform();
+    if (!applyTransform()) return;
+
     const data = getSaveData();
     const blob = new Blob(
       [JSON.stringify(data, null, 2)],
       { type: 'application/json' }
     );
+
     downloadBlob(blob, 'mini-blender-settings.json');
     status.textContent = '設定ファイルを保存したよ。';
   } catch (error) {
@@ -485,8 +519,8 @@ settingsFile.addEventListener('change', async () => {
 
     status.textContent = '設定を復元したよ！';
   } catch (error) {
-    status.textContent = '設定読み込み失敗：' +
-      (error.message || String(error));
+    status.textContent =
+      '設定読み込み失敗：' + (error.message || String(error));
   } finally {
     settingsFile.value = '';
   }
@@ -504,12 +538,49 @@ document.querySelector('#saveImage').addEventListener('click', () => {
         status.textContent = '画像を作成できませんでした。';
         return;
       }
+
       downloadBlob(blob, 'mini-blender-model.png');
       status.textContent = 'PNG画像を保存したよ。';
     }, 'image/png');
   } catch (error) {
-    status.textContent = '画像保存失敗：' +
-      (error.message || String(error));
+    status.textContent =
+      '画像保存失敗：' + (error.message || String(error));
+  }
+});
+
+exportButton.addEventListener('click', async () => {
+  if (!currentVRM) {
+    status.textContent = '先にVRMモデルを読み込んでね。';
+    return;
+  }
+
+  exportButton.disabled = true;
+  status.textContent = 'VRMを書き出し中...';
+
+  try {
+    applyTransform();
+    currentVRM.scene.updateMatrixWorld(true);
+
+    const buffer = await VRMExport(currentVRM, 1);
+
+    if (!buffer || buffer.byteLength === 0) {
+      throw new Error('書き出しデータが空でした。');
+    }
+
+    const blob = new Blob(
+      [buffer],
+      { type: 'application/octet-stream' }
+    );
+
+    downloadBlob(blob, 'mini-blender-model.vrm');
+    status.textContent =
+      '書き出し処理が完了したよ。保存したVRMを再読み込みして確認してね。';
+  } catch (error) {
+    console.error(error);
+    status.textContent =
+      'VRM書き出し失敗：' + (error.message || String(error));
+  } finally {
+    exportButton.disabled = false;
   }
 });
 
@@ -533,7 +604,11 @@ const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
-  if (currentVRM) currentVRM.update(clock.getDelta());
+
+  if (currentVRM) {
+    currentVRM.update(clock.getDelta());
+  }
+
   controls.update();
   renderer.render(scene, camera);
 }

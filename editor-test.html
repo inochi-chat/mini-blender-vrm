@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Mini 3D Studio - Test</title>
+<title>Mini Blender VRM - Mesh Editor</title>
 
 <script type="importmap">
 {
@@ -16,423 +16,631 @@
 </script>
 
 <style>
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  background: #171923;
-  color: #f5f5f5;
-  font-family: sans-serif;
+*{box-sizing:border-box}
+body{
+  margin:0;background:#171923;color:#f3f4f6;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 }
-
-header {
-  padding: 14px;
-  background: #242736;
-  font-weight: bold;
+header{
+  padding:13px 15px;background:#252938;
+  font-size:19px;font-weight:bold;
 }
-
-#viewport {
-  width: 100%;
-  height: 48vh;
-  min-height: 280px;
-  position: relative;
-  overflow: hidden;
-  background: #202431;
+.note{font-size:12px;color:#b9c2d8;font-weight:normal;margin-top:5px}
+#viewport{
+  height:48dvh;min-height:270px;position:relative;
+  overflow:hidden;background:#202532;touch-action:none;
 }
-
-#viewport canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
+#viewport canvas{display:block;width:100%;height:100%}
+#status{
+  padding:8px 12px;font-size:12px;color:#aee8ff;
+  background:#202532;min-height:32px;
 }
-
-main { padding: 12px; }
-
-h2 {
-  font-size: 15px;
-  margin: 16px 0 9px;
+.panel{padding:12px;display:grid;gap:10px}
+.section{
+  background:#252938;border-radius:12px;padding:11px;
 }
-
-.buttons {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+.section-title{font-size:14px;font-weight:bold;margin-bottom:9px}
+.row{display:flex;gap:7px;flex-wrap:wrap}
+button{
+  background:#3a4258;color:white;border:1px solid #555f79;
+  border-radius:9px;padding:11px 12px;font-size:14px;
+  min-height:42px;touch-action:manipulation;
 }
-
-button {
-  border: 0;
-  border-radius: 9px;
-  padding: 13px 5px;
-  background: #343b50;
-  color: white;
-  font-size: 14px;
-  touch-action: manipulation;
-}
-
-button:active { background: #5669a1; }
-
-button.primary { background: #536fe0; }
-button.danger { background: #8d394b; }
-
-#status {
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: 8px;
-  background: #242736;
-  font-size: 13px;
-  overflow-wrap: anywhere;
-}
-
-.note {
-  color: #c0c4d2;
-  font-size: 12px;
-  line-height: 1.7;
+button:active{background:#596987}
+button.active{background:#176d91;border-color:#65d9ff}
+button.danger{background:#743d49}
+button:disabled{opacity:.35}
+.row button{flex:1}
+.small{font-size:12px;color:#b9c2d8;line-height:1.6;margin-top:8px}
+input[type=color]{width:48px;height:42px;border:0;background:transparent}
+#objectList{display:flex;gap:7px;flex-wrap:wrap}
+#objectList button{flex:1}
+@media(min-width:750px){
+  #viewport{height:55vh}
+  .panel{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
-
 <body>
-<header>Mini 3D Studio - 開発テスト</header>
+<header>
+  Mini Blender VRM
+  <div class="note">Mesh Editor — 頂点・辺・面の編集テスト</div>
+</header>
 
 <div id="viewport"></div>
+<div id="status">準備中…</div>
 
-<main>
-  <h2>オブジェクトを追加</h2>
-  <div class="buttons">
-    <button class="primary" id="addBox">立方体</button>
-    <button class="primary" id="addSphere">球</button>
-    <button class="primary" id="addCylinder">円柱</button>
-  </div>
+<div class="panel">
+  <section class="section">
+    <div class="section-title">① オブジェクト追加</div>
+    <div class="row">
+      <button id="addBox">＋ 箱</button>
+      <button id="addSphere">＋ 球</button>
+      <button id="addCylinder">＋ 円柱</button>
+    </div>
+    <div class="small">追加したオブジェクトをタップして選択できるよ。</div>
+  </section>
 
-  <h2>選択したオブジェクトを移動</h2>
-  <div class="buttons">
-    <button data-move="x" data-value="-0.2">X −</button>
-    <button data-move="y" data-value="0.2">Y ＋</button>
-    <button data-move="x" data-value="0.2">X ＋</button>
-    <button data-move="y" data-value="-0.2">Y −</button>
-    <button data-move="z" data-value="0.2">Z ＋</button>
-    <button data-move="z" data-value="-0.2">Z −</button>
-  </div>
+  <section class="section">
+    <div class="section-title">② 編集モード</div>
+    <div class="row">
+      <button id="vertexMode" class="active">頂点</button>
+      <button id="edgeMode">辺</button>
+      <button id="faceMode">面</button>
+      <button id="objectMode">物体</button>
+    </div>
+    <div class="small" id="modeHelp">
+      頂点モード：角の点をタップして選択し、移動ボタンで変形する。
+    </div>
+  </section>
 
-  <h2>大きさを変更</h2>
-  <div class="buttons">
-    <button id="scaleDown">小さくする</button>
-    <button id="scaleUp">大きくする</button>
-    <button id="resetTransform">位置・大きさリセット</button>
-  </div>
+  <section class="section">
+    <div class="section-title">③ 選択部分を移動</div>
+    <div class="row">
+      <button id="xMinus">X −</button>
+      <button id="xPlus">X ＋</button>
+    </div>
+    <div class="row" style="margin-top:7px">
+      <button id="yMinus">Y −</button>
+      <button id="yPlus">Y ＋</button>
+    </div>
+    <div class="row" style="margin-top:7px">
+      <button id="zMinus">Z −</button>
+      <button id="zPlus">Z ＋</button>
+    </div>
+    <div class="row" style="margin-top:7px">
+      <button id="smaller">縮小</button>
+      <button id="larger">拡大</button>
+      <button id="resetTransform">変形リセット</button>
+    </div>
+    <div class="small">移動量は1回につき0.15。選択した頂点・辺・面を少しずつ動かす。</div>
+  </section>
 
-  <h2>削除</h2>
-  <div class="buttons">
-    <button class="danger" id="deleteObject">選択物を削除</button>
-  </div>
+  <section class="section">
+    <div class="section-title">④ オブジェクトと色</div>
+    <div id="objectList"></div>
+    <div class="row" style="margin-top:8px;align-items:center">
+      <span style="font-size:13px">色変更</span>
+      <input id="colorPicker" type="color" value="#69a8ff">
+      <button id="applyColor">色を適用</button>
+      <button id="deleteObject" class="danger">削除</button>
+    </div>
+  </section>
 
-  <div id="status">準備中...</div>
-
-  <p class="note">
-    画面をドラッグ：カメラ回転<br>
-    オブジェクトをタップ：選択<br>
-    ※この段階では編集対象は基本図形です。
-    頂点・辺・面の編集機能は次の段階で追加します。
-  </p>
-</main>
+  <section class="section">
+    <div class="section-title">⑤ カメラ・編集補助</div>
+    <div class="row">
+      <button id="resetCamera">カメラを戻す</button>
+      <button id="clearSelection">選択解除</button>
+    </div>
+    <div class="small">
+      画面をドラッグして視点を回転、2本指で拡大縮小。
+      頂点・辺・面を選択してから移動ボタンを押してね。
+    </div>
+  </section>
+</div>
 
 <script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 
-const viewport = document.getElementById('viewport');
-const status = document.getElementById('status');
-
+const viewport = document.getElementById("viewport");
+const status = document.getElementById("status");
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x202431);
+scene.background = new THREE.Color(0x202532);
 
 const camera = new THREE.PerspectiveCamera(
-  45, 1, 0.1, 1000
+  45, viewport.clientWidth / viewport.clientHeight, 0.1, 1000
 );
-camera.position.set(4, 3, 6);
+camera.position.set(4, 3.2, 6);
 
-const renderer = new THREE.WebGLRenderer({
-  antialias: true
-});
-renderer.setPixelRatio(
-  Math.min(window.devicePixelRatio, 2)
-);
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(viewport.clientWidth, viewport.clientHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 viewport.appendChild(renderer.domElement);
 
-const controls = new OrbitControls(
-  camera, renderer.domElement
-);
+const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0, 1, 0);
+controls.minDistance = 2;
+controls.maxDistance = 25;
 
-scene.add(new THREE.HemisphereLight(
-  0xffffff, 0x596070, 2
-));
-
-const light = new THREE.DirectionalLight(
-  0xffffff, 2
-);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x657087, 2));
+const light = new THREE.DirectionalLight(0xffffff, 2.3);
 light.position.set(4, 8, 5);
 scene.add(light);
 
-const grid = new THREE.GridHelper(
-  20, 20, 0x727b9c, 0x42495d
-);
+const grid = new THREE.GridHelper(20, 20, 0x71809b, 0x41495c);
 scene.add(grid);
-
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshBasicMaterial({
-    color: 0x202431,
-    side: THREE.DoubleSide
-  })
-);
-floor.rotation.x = -Math.PI / 2;
-floor.position.y = -0.015;
-scene.add(floor);
-
-const objects = [];
-let selected = null;
-let nextId = 1;
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
+raycaster.params.Points.threshold = 0.22;
+raycaster.params.Line.threshold = 0.13;
 
-const selectionMaterial = new THREE.MeshBasicMaterial({
-  color: 0xffffff,
-  wireframe: true,
-  transparent: true,
-  opacity: 0.85,
-  depthTest: false
+let objects = [];
+let selectedObject = null;
+let mode = "vertex";
+let selectedVertex = -1;
+let selectedEdge = null;
+let selectedFace = null;
+let helperGroup = new THREE.Group();
+scene.add(helperGroup);
+
+let nextName = 1;
+let downX = 0, downY = 0;
+
+const vertexMaterial = new THREE.PointsMaterial({
+  color:0xffd54f,size:13,sizeAttenuation:false,depthTest:false
+});
+const selectedVertexMaterial = new THREE.PointsMaterial({
+  color:0xff4d67,size:19,sizeAttenuation:false,depthTest:false
+});
+const edgeMaterial = new THREE.LineBasicMaterial({
+  color:0x7ee7ff,depthTest:false
+});
+const selectedEdgeMaterial = new THREE.LineBasicMaterial({
+  color:0xff4d67,linewidth:3,depthTest:false
+});
+const selectedFaceMaterial = new THREE.MeshBasicMaterial({
+  color:0xffc857,transparent:true,opacity:0.5,
+  side:THREE.DoubleSide,depthTest:false
 });
 
-let selectionWire = null;
+function say(message){ status.textContent = message; }
 
-function resize() {
-  const width = viewport.clientWidth;
-  const height = viewport.clientHeight;
-
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-
-  renderer.setSize(width, height);
+function makeEditableGeometry(geometry){
+  const merged = mergeVertices(geometry, 0.0001);
+  merged.computeVertexNormals();
+  return merged;
 }
 
-window.addEventListener('resize', resize);
-resize();
-
-function updateStatus(message = '') {
-  const selectedText = selected
-    ? `選択中：${selected.userData.label}`
-    : '選択中：なし';
-
-  status.textContent =
-    `${selectedText} / オブジェクト数：${objects.length}` +
-    (message ? ` / ${message}` : '');
-}
-
-function selectObject(object) {
-  selected = object;
-
-  if (selectionWire) {
-    scene.remove(selectionWire);
-    selectionWire.geometry.dispose();
-    selectionWire = null;
-  }
-
-  if (selected) {
-    selectionWire = new THREE.Mesh(
-      selected.geometry,
-      selectionMaterial
-    );
-    selectionWire.position.copy(selected.position);
-    selectionWire.rotation.copy(selected.rotation);
-    selectionWire.scale.copy(selected.scale);
-    selectionWire.renderOrder = 10;
-    scene.add(selectionWire);
-  }
-
-  updateStatus();
-}
-
-function addObject(type) {
+function addObject(type){
   let geometry;
-  let label;
+  if(type === "箱") geometry = new THREE.BoxGeometry(1.5,1.5,1.5);
+  if(type === "球") geometry = new THREE.SphereGeometry(0.8,12,8);
+  if(type === "円柱") geometry = new THREE.CylinderGeometry(0.65,0.65,1.5,12);
 
-  if (type === 'box') {
-    geometry = new THREE.BoxGeometry(1, 1, 1);
-    label = '立方体';
-  } else if (type === 'sphere') {
-    geometry = new THREE.SphereGeometry(0.65, 24, 16);
-    label = '球';
-  } else {
-    geometry = new THREE.CylinderGeometry(
-      0.5, 0.5, 1.2, 24
-    );
-    label = '円柱';
-  }
+  geometry = makeEditableGeometry(geometry);
 
   const material = new THREE.MeshStandardMaterial({
-    color: new THREE.Color().setHSL(
-      Math.random(), 0.65, 0.58
-    ),
-    roughness: 0.7
+    color:0x69a8ff,roughness:0.7,metalness:0.05,
+    side:THREE.DoubleSide
   });
+  const mesh = new THREE.Mesh(geometry,material);
+  mesh.position.set((objects.length % 3) * 1.8 - 1.8,0.8,0);
+  mesh.userData.name = type + objects.filter(o=>o.userData.type===type).length;
+  mesh.userData.type = type;
+  mesh.userData.originalPosition = mesh.position.clone();
+  mesh.userData.originalScale = mesh.scale.clone();
+  mesh.userData.originalRotation = mesh.rotation.clone();
 
-  const object = new THREE.Mesh(geometry, material);
-
-  object.position.set(
-    (Math.random() - 0.5) * 1.5,
-    1,
-    (Math.random() - 0.5) * 1.5
-  );
-
-  object.userData.id = nextId++;
-  object.userData.label = `${label} ${object.userData.id}`;
-
-  scene.add(object);
-  objects.push(object);
-  selectObject(object);
+  scene.add(mesh);
+  objects.push(mesh);
+  selectObject(mesh);
+  updateObjectList();
+  say(type + "を追加したよ。");
 }
 
-document.getElementById('addBox').onclick =
-  () => addObject('box');
-
-document.getElementById('addSphere').onclick =
-  () => addObject('sphere');
-
-document.getElementById('addCylinder').onclick =
-  () => addObject('cylinder');
-
-document.querySelectorAll('[data-move]').forEach(button => {
-  button.addEventListener('click', () => {
-    if (!selected) {
-      updateStatus('先にオブジェクトを選択してね');
-      return;
+function clearHelpers(){
+  while(helperGroup.children.length){
+    const child = helperGroup.children.pop();
+    if(child.geometry) child.geometry.dispose();
+    if(child.material && child.material !== vertexMaterial &&
+       child.material !== selectedVertexMaterial &&
+       child.material !== edgeMaterial &&
+       child.material !== selectedEdgeMaterial &&
+       child.material !== selectedFaceMaterial){
+      child.material.dispose();
     }
-
-    const axis = button.dataset.move;
-    const amount = Number(button.dataset.value);
-
-    selected.position[axis] += amount;
-    updateStatus('移動しました');
-  });
-});
-
-document.getElementById('scaleUp').onclick = () => {
-  if (!selected) {
-    updateStatus('先にオブジェクトを選択してね');
-    return;
   }
-
-  selected.scale.multiplyScalar(1.15);
-  updateStatus('拡大しました');
-};
-
-document.getElementById('scaleDown').onclick = () => {
-  if (!selected) {
-    updateStatus('先にオブジェクトを選択してね');
-    return;
-  }
-
-  selected.scale.multiplyScalar(0.87);
-  updateStatus('縮小しました');
-};
-
-document.getElementById('resetTransform').onclick = () => {
-  if (!selected) {
-    updateStatus('先にオブジェクトを選択してね');
-    return;
-  }
-
-  selected.position.set(0, 1, 0);
-  selected.rotation.set(0, 0, 0);
-  selected.scale.set(1, 1, 1);
-  updateStatus('リセットしました');
-};
-
-document.getElementById('deleteObject').onclick = () => {
-  if (!selected) {
-    updateStatus('削除する物を選択してね');
-    return;
-  }
-
-  const index = objects.indexOf(selected);
-
-  scene.remove(selected);
-
-  selected.geometry.dispose();
-
-  if (Array.isArray(selected.material)) {
-    selected.material.forEach(material => material.dispose());
-  } else {
-    selected.material.dispose();
-  }
-
-  if (index !== -1) objects.splice(index, 1);
-
-  selectObject(null);
-  updateStatus('削除しました');
-};
-
-// ドラッグとタップを区別して選択する
-let pointerStart = null;
-
-renderer.domElement.addEventListener('pointerdown', event => {
-  if (event.isPrimary === false) return;
-
-  pointerStart = {
-    x: event.clientX,
-    y: event.clientY
-  };
-});
-
-renderer.domElement.addEventListener('pointerup', event => {
-  if (!pointerStart || event.isPrimary === false) return;
-
-  const dx = event.clientX - pointerStart.x;
-  const dy = event.clientY - pointerStart.y;
-  pointerStart = null;
-
-  // カメラを動かした場合は選択判定しない
-  if (Math.hypot(dx, dy) > 8) return;
-
-  const rect = renderer.domElement.getBoundingClientRect();
-
-  pointer.x =
-    ((event.clientX - rect.left) / rect.width) * 2 - 1;
-
-  pointer.y =
-    -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-  raycaster.setFromCamera(pointer, camera);
-
-  const hits = raycaster.intersectObjects(objects, false);
-
-  if (hits.length) {
-    selectObject(hits[0].object);
-  }
-});
-
-function animate() {
-  requestAnimationFrame(animate);
-
-  controls.update();
-
-  if (selectionWire && selected) {
-    selectionWire.position.copy(selected.position);
-    selectionWire.rotation.copy(selected.rotation);
-    selectionWire.scale.copy(selected.scale);
-  }
-
-  renderer.render(scene, camera);
 }
 
-addObject('box');
-updateStatus('準備完了');
+function edgePairs(geometry){
+  const index = geometry.index;
+  const position = geometry.attributes.position;
+  const pairs = new Map();
+
+  function add(a,b){
+    if(a===b)return;
+    const lo=Math.min(a,b), hi=Math.max(a,b);
+    pairs.set(lo+"_"+hi,[lo,hi]);
+  }
+
+  if(index){
+    for(let i=0;i<index.count;i+=3){
+      const a=index.getX(i), b=index.getX(i+1), c=index.getX(i+2);
+      add(a,b);add(b,c);add(c,a);
+    }
+  }else{
+    for(let i=0;i<position.count;i+=3){
+      add(i,i+1);add(i+1,i+2);add(i+2,i);
+    }
+  }
+  return [...pairs.values()];
+}
+
+let edgeLookup = [];
+
+function drawHelpers(){
+  clearHelpers();
+  edgeLookup = [];
+  if(!selectedObject)return;
+
+  const geometry = selectedObject.geometry;
+  const position = geometry.attributes.position;
+  const points = [];
+  for(let i=0;i<position.count;i++){
+    points.push(position.getX(i),position.getY(i),position.getZ(i));
+  }
+
+  const pointGeometry = new THREE.BufferGeometry();
+  pointGeometry.setAttribute("position",
+    new THREE.Float32BufferAttribute(points,3));
+  const pointCloud = new THREE.Points(pointGeometry,vertexMaterial);
+  pointCloud.userData.helperType="vertices";
+  pointCloud.renderOrder=10;
+  helperGroup.add(pointCloud);
+
+  const pairs = edgePairs(geometry);
+  const lineCoords = [];
+  edgeLookup = pairs;
+  for(const [a,b] of pairs){
+    lineCoords.push(
+      position.getX(a),position.getY(a),position.getZ(a),
+      position.getX(b),position.getY(b),position.getZ(b)
+    );
+  }
+  const lineGeometry = new THREE.BufferGeometry();
+  lineGeometry.setAttribute("position",
+    new THREE.Float32BufferAttribute(lineCoords,3));
+  const lines = new THREE.LineSegments(lineGeometry,edgeMaterial);
+  lines.userData.helperType="edges";
+  lines.renderOrder=9;
+  helperGroup.add(lines);
+
+  if(mode==="vertex" && selectedVertex>=0 &&
+     selectedVertex<position.count){
+    const p = new THREE.Vector3(
+      position.getX(selectedVertex),
+      position.getY(selectedVertex),
+      position.getZ(selectedVertex)
+    );
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position",
+      new THREE.Float32BufferAttribute([p.x,p.y,p.z],3));
+    const marker = new THREE.Points(g,selectedVertexMaterial);
+    marker.renderOrder=12;
+    helperGroup.add(marker);
+  }
+
+  if(mode==="edge" && selectedEdge){
+    const a=selectedEdge[0],b=selectedEdge[1];
+    const g=new THREE.BufferGeometry();
+    g.setAttribute("position",new THREE.Float32BufferAttribute([
+      position.getX(a),position.getY(a),position.getZ(a),
+      position.getX(b),position.getY(b),position.getZ(b)
+    ],3));
+    const l=new THREE.LineSegments(g,selectedEdgeMaterial);
+    l.renderOrder=12;
+    helperGroup.add(l);
+  }
+
+  if(mode==="face" && selectedFace){
+    const g=geometry.clone();
+    const pos=g.attributes.position;
+    const indices=g.index;
+    const ids=indices
+      ? [indices.getX(selectedFace*3),indices.getX(selectedFace*3+1),indices.getX(selectedFace*3+2)]
+      : [selectedFace*3,selectedFace*3+1,selectedFace*3+2];
+    const arr=[];
+    for(const i of ids) arr.push(pos.getX(i),pos.getY(i),pos.getZ(i));
+    g.dispose();
+    const faceG=new THREE.BufferGeometry();
+    faceG.setAttribute("position",new THREE.Float32BufferAttribute(arr,3));
+    faceG.computeVertexNormals();
+    const faceMesh=new THREE.Mesh(faceG,selectedFaceMaterial);
+    faceMesh.renderOrder=11;
+    helperGroup.add(faceMesh);
+  }
+}
+
+function selectObject(mesh){
+  selectedObject=mesh;
+  selectedVertex=-1;
+  selectedEdge=null;
+  selectedFace=null;
+  updateObjectList();
+  drawHelpers();
+  if(mesh) say("選択中：" + mesh.userData.name);
+}
+
+function updateObjectList(){
+  const list=document.getElementById("objectList");
+  list.innerHTML="";
+  for(const mesh of objects){
+    const button=document.createElement("button");
+    button.textContent=(mesh===selectedObject?"● ":"")+mesh.userData.name;
+    if(mesh===selectedObject)button.classList.add("active");
+    button.addEventListener("click",()=>selectObject(mesh));
+    list.appendChild(button);
+  }
+}
+
+function setMode(newMode){
+  mode=newMode;
+  selectedVertex=-1;
+  selectedEdge=null;
+  selectedFace=null;
+  for(const id of ["vertexMode","edgeMode","faceMode","objectMode"]){
+    document.getElementById(id).classList.remove("active");
+  }
+  const ids={vertex:"vertexMode",edge:"edgeMode",face:"faceMode",object:"objectMode"};
+  document.getElementById(ids[mode]).classList.add("active");
+
+  const help={
+    vertex:"頂点モード：角の点をタップして選択し、移動ボタンで変形する。",
+    edge:"辺モード：青い辺をタップして選択。両端の頂点を一緒に動かす。",
+    face:"面モード：面をタップして選択。選んだ三角形の頂点を一緒に動かす。",
+    object:"物体モード：オブジェクトをタップして選択。移動ボタンで物体全体を動かす。"
+  };
+  document.getElementById("modeHelp").textContent=help[mode];
+  drawHelpers();
+  say("編集モード：" + mode);
+}
+
+function pointerToNDC(event){
+  const rect=renderer.domElement.getBoundingClientRect();
+  pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
+  pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
+}
+
+renderer.domElement.addEventListener("pointerdown",e=>{
+  downX=e.clientX;downY=e.clientY;
+});
+
+renderer.domElement.addEventListener("pointerup",e=>{
+  if(Math.hypot(e.clientX-downX,e.clientY-downY)>10)return;
+  pointerToNDC(e);
+  raycaster.setFromCamera(pointer,camera);
+
+  if(mode==="object"){
+    const hits=raycaster.intersectObjects(objects,false);
+    if(hits.length)selectObject(hits[0].object);
+    return;
+  }
+
+  if(!selectedObject){
+    say("先にオブジェクトを追加してね。");
+    return;
+  }
+
+  const geometry=selectedObject.geometry;
+  const position=geometry.attributes.position;
+
+  if(mode==="vertex"){
+    const hits=raycaster.intersectObject(helperGroup.children.find(c=>c.userData.helperType==="vertices"));
+    if(hits.length){
+      selectedVertex=hits[0].index;
+      selectedEdge=null;selectedFace=null;
+      drawHelpers();
+      say("頂点 " + selectedVertex + " を選択中");
+    }else{
+      say("黄色い頂点をタップして選択してね。");
+    }
+  }
+
+  if(mode==="edge"){
+    const lines=helperGroup.children.find(c=>c.userData.helperType==="edges");
+    const hits=lines?raycaster.intersectObject(lines):[];
+    if(hits.length){
+      const index=hits[0].index;
+      const pairIndex=Math.floor(index/2);
+      if(edgeLookup[pairIndex]){
+        selectedEdge=edgeLookup[pairIndex];
+        selectedVertex=-1;selectedFace=null;
+        drawHelpers();
+        say("辺を選択中。両端を一緒に動かせるよ。");
+      }
+    }else{
+      say("辺をタップして選択してね。");
+    }
+  }
+
+  if(mode==="face"){
+    const hits=raycaster.intersectObject(selectedObject,false);
+    if(hits.length){
+      const hit=hits[0];
+      if(hit.face){
+        const ids=geometry.index
+          ? [geometry.index.getX(hit.faceIndex*3),geometry.index.getX(hit.faceIndex*3+1),geometry.index.getX(hit.faceIndex*3+2)]
+          : [hit.faceIndex*3,hit.faceIndex*3+1,hit.faceIndex*3+2];
+        selectedFace=hit.faceIndex;
+        selectedEdge=null;selectedVertex=-1;
+        selectedObject.userData.faceVertices=ids;
+        drawHelpers();
+        say("面を選択中。選択面を移動できるよ。");
+      }
+    }else{
+      say("面をタップして選択してね。");
+    }
+  }
+});
+
+function updateGeometry(){
+  if(!selectedObject)return;
+  selectedObject.geometry.attributes.position.needsUpdate=true;
+  selectedObject.geometry.computeVertexNormals();
+  selectedObject.geometry.computeBoundingSphere();
+  drawHelpers();
+}
+
+function moveSelection(axis,amount){
+  if(!selectedObject){
+    say("先にオブジェクトを追加してね。");
+    return;
+  }
+
+  if(mode==="object"){
+    selectedObject.position[axis]+=amount;
+    say("オブジェクトを移動したよ。");
+    return;
+  }
+
+  const geometry=selectedObject.geometry;
+  const pos=geometry.attributes.position;
+  let ids=[];
+
+  if(mode==="vertex" && selectedVertex>=0){
+    ids=[selectedVertex];
+  }else if(mode==="edge" && selectedEdge){
+    ids=[...selectedEdge];
+  }else if(mode==="face" && selectedFace!==null){
+    ids=selectedObject.userData.faceVertices || [];
+  }else{
+    say("先に頂点・辺・面をタップして選択してね。");
+    return;
+  }
+
+  for(const id of [...new Set(ids)]){
+    const value=axis==="x" ? pos.getX(id)
+      : axis==="y" ? pos.getY(id) : pos.getZ(id);
+    if(axis==="x")pos.setX(id,value+amount);
+    if(axis==="y")pos.setY(id,value+amount);
+    if(axis==="z")pos.setZ(id,value+amount);
+  }
+
+  updateGeometry();
+  say("選択部分を " + axis.toUpperCase() + " 方向へ移動したよ。");
+}
+
+document.getElementById("addBox").onclick=()=>addObject("箱");
+document.getElementById("addSphere").onclick=()=>addObject("球");
+document.getElementById("addCylinder").onclick=()=>addObject("円柱");
+
+document.getElementById("vertexMode").onclick=()=>setMode("vertex");
+document.getElementById("edgeMode").onclick=()=>setMode("edge");
+document.getElementById("faceMode").onclick=()=>setMode("face");
+document.getElementById("objectMode").onclick=()=>setMode("object");
+
+document.getElementById("xMinus").onclick=()=>moveSelection("x",-0.15);
+document.getElementById("xPlus").onclick=()=>moveSelection("x",0.15);
+document.getElementById("yMinus").onclick=()=>moveSelection("y",-0.15);
+document.getElementById("yPlus").onclick=()=>moveSelection("y",0.15);
+document.getElementById("zMinus").onclick=()=>moveSelection("z",-0.15);
+document.getElementById("zPlus").onclick=()=>moveSelection("z",0.15);
+
+document.getElementById("larger").onclick=()=>{
+  if(selectedObject)selectedObject.scale.multiplyScalar(1.1);
+  else say("拡大するオブジェクトを選んでね。");
+};
+document.getElementById("smaller").onclick=()=>{
+  if(selectedObject)selectedObject.scale.multiplyScalar(0.9);
+  else say("縮小するオブジェクトを選んでね。");
+};
+document.getElementById("resetTransform").onclick=()=>{
+  if(!selectedObject)return;
+  selectedObject.position.copy(selectedObject.userData.originalPosition);
+  selectedObject.scale.copy(selectedObject.userData.originalScale);
+  selectedObject.rotation.copy(selectedObject.userData.originalRotation);
+  const pos=selectedObject.geometry.attributes.position;
+  if(selectedObject.userData.originalVertices){
+    for(let i=0;i<pos.count;i++){
+      const v=selectedObject.userData.originalVertices[i];
+      pos.setXYZ(i,v.x,v.y,v.z);
+    }
+    updateGeometry();
+  }
+  say("オブジェクトの変形をリセットしたよ。");
+};
+
+document.getElementById("applyColor").onclick=()=>{
+  if(!selectedObject)return;
+  selectedObject.material.color.set(document.getElementById("colorPicker").value);
+  say("色を変更したよ。");
+};
+
+document.getElementById("deleteObject").onclick=()=>{
+  if(!selectedObject)return;
+  scene.remove(selectedObject);
+  selectedObject.geometry.dispose();
+  selectedObject.material.dispose();
+  objects=objects.filter(o=>o!==selectedObject);
+  selectedObject=null;
+  selectedVertex=-1;selectedEdge=null;selectedFace=null;
+  clearHelpers();updateObjectList();
+  say("オブジェクトを削除したよ。");
+};
+
+document.getElementById("clearSelection").onclick=()=>{
+  selectedVertex=-1;selectedEdge=null;selectedFace=null;
+  drawHelpers();say("編集部分の選択を解除したよ。");
+};
+
+document.getElementById("resetCamera").onclick=()=>{
+  camera.position.set(4,3.2,6);
+  controls.target.set(0,1,0);
+  controls.update();
+  say("カメラをリセットしたよ。");
+};
+
+function saveOriginalVertices(mesh){
+  const pos=mesh.geometry.attributes.position;
+  mesh.userData.originalVertices=[];
+  for(let i=0;i<pos.count;i++){
+    mesh.userData.originalVertices.push(
+      new THREE.Vector3(pos.getX(i),pos.getY(i),pos.getZ(i))
+    );
+  }
+}
+
+// Keep the original vertex positions for the reset button.
+const originalAddObject=addObject;
+addObject=function(type){
+  originalAddObject(type);
+  if(selectedObject)saveOriginalVertices(selectedObject);
+};
+
+function resize(){
+  const w=viewport.clientWidth;
+  const h=viewport.clientHeight;
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+}
+window.addEventListener("resize",resize);
+
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene,camera);
+}
 animate();
+
+addObject("箱");
+say("準備完了！頂点・辺・面モードを試してね。");
 </script>
 </body>
 </html>

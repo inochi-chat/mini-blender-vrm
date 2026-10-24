@@ -2,396 +2,541 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1">
-  <title>Mini Blender VRM</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Mini Blender VRM</title>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-    }
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
   }
-  </script>
+}
+</script>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: #20232a;
-      color: white;
-      font-family: sans-serif;
-    }
-
-    header {
-      padding: 16px;
-      background: #303640;
-      font-size: 21px;
-      font-weight: bold;
-    }
-
-    #toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      padding: 12px;
-    }
-
-    button,
-    .file-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 13px;
-      border: 0;
-      border-radius: 8px;
-      background: #5267d9;
-      color: white;
-      font-size: 15px;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-
-    #file {
-      display: block;
-      width: 100%;
-      padding: 8px;
-      color: white;
-      font-size: 14px;
-    }
-
-    #viewport {
-      width: 100%;
-      height: 60dvh;
-      min-height: 320px;
-      background: #17191f;
-      overflow: hidden;
-      touch-action: none;
-    }
-
-    #viewport canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    #status {
-      padding: 14px;
-      color: #cbd5e1;
-      overflow-wrap: anywhere;
-    }
-
-    #help {
-      padding: 0 14px 16px;
-      color: #aebbd0;
-      font-size: 13px;
-      line-height: 1.7;
-    }
-  </style>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #20232a;
+  color: white;
+  font-family: sans-serif;
+}
+header {
+  padding: 16px;
+  background: #303640;
+  font-size: 21px;
+  font-weight: bold;
+}
+section {
+  margin: 12px;
+  padding: 14px;
+  background: #303640;
+  border-radius: 12px;
+}
+h2 { font-size: 17px; margin: 0 0 12px; }
+button, .file-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #5267d9;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+button:active { opacity: .75; }
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#file, #settingsFile { display: none; }
+#viewport {
+  width: 100%;
+  height: 55dvh;
+  min-height: 300px;
+  background: #17191f;
+  overflow: hidden;
+  touch-action: none;
+}
+#viewport canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#status {
+  padding: 12px;
+  color: #cbd5e1;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.field {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+.field label { font-size: 14px; }
+.field input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #64748b;
+  border-radius: 7px;
+  background: #17191f;
+  color: white;
+  font-size: 16px;
+}
+.note {
+  color: #b8c4d8;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.primary { background: #16866b; }
+.secondary { background: #586477; }
+.danger { background: #a43d50; }
+</style>
 </head>
 
 <body>
-  <header>Mini Blender VRM</header>
+<header>Mini Blender VRM</header>
 
-  <div id="toolbar">
-    <label for="file" class="file-button">
-      VRMを読み込む
-    </label>
+<section>
+  <h2>① モデル読み込み</h2>
+  <div class="controls">
+    <label class="file-button" for="file">VRMを読み込む</label>
+    <button id="cameraReset" class="secondary" type="button">カメラリセット</button>
+  </div>
+  <input id="file" type="file" accept=".vrm,model/vrm">
+</section>
 
-    <button id="rotate" type="button">
-      カメラをリセット
-    </button>
+<div id="viewport"></div>
+<div id="status">起動中...</div>
 
-    <input id="file" type="file" accept=".vrm">
+<section>
+  <h2>② モデル編集</h2>
+  <p class="note">数値を変えるとモデルに反映されるよ。位置はX・Y・Z、回転はY軸を度数で指定するよ。</p>
+
+  <div class="field">
+    <label for="posX">位置 X</label>
+    <input id="posX" type="number" step="0.1" value="0">
+  </div>
+  <div class="field">
+    <label for="posY">位置 Y</label>
+    <input id="posY" type="number" step="0.1" value="0">
+  </div>
+  <div class="field">
+    <label for="posZ">位置 Z</label>
+    <input id="posZ" type="number" step="0.1" value="0">
+  </div>
+  <div class="field">
+    <label for="rotY">回転 Y（度）</label>
+    <input id="rotY" type="number" step="5" value="0">
+  </div>
+  <div class="field">
+    <label for="modelScale">大きさ</label>
+    <input id="modelScale" type="number" step="0.1" min="0.1" max="10" value="1">
   </div>
 
-  <div id="viewport"></div>
-
-  <div id="status">
-    VRMモデルを読み込んでください。
+  <div class="controls">
+    <button id="apply" type="button">数値を反映</button>
+    <button id="modelReset" class="secondary" type="button">モデルを初期化</button>
   </div>
+</section>
 
-  <div id="help">
-    1本指：モデルを回転<br>
-    2本指：拡大・縮小<br>
-    カメラをリセット：最初の視点に戻す
+<section>
+  <h2>③ 保存・復元</h2>
+  <p class="note">
+    「設定を保存」は位置・回転・大きさとカメラ設定をJSONファイルに保存するよ。
+    「設定を読み込む」でその状態に戻せるよ。
+    「画像を保存」は現在の画面をPNGにするよ。
+  </p>
+  <div class="controls">
+    <button id="saveSettings" class="primary" type="button">設定を保存</button>
+    <label for="settingsFile" class="file-button">設定を読み込む</label>
+    <button id="saveImage" type="button">画像を保存</button>
   </div>
+  <input id="settingsFile" type="file" accept=".json,application/json">
+</section>
 
-  <script type="module">
-    import * as THREE from 'three';
+<section>
+  <h2>④ 操作方法</h2>
+  <p class="note">
+    ・1本指：カメラを回転<br>
+    ・2本指：拡大・縮小<br>
+    ・モデル編集：数値で位置・回転・大きさを変更<br>
+    ・設定保存：編集状態をJSONで保存<br>
+    ・画像保存：表示画面をPNGで保存
+  </p>
+  <p class="note">
+    ※ JSONは編集設定の保存用だよ。モデルの形状や衣装を変更済みVRMとして書き出す機能ではないよ。
+  </p>
+</section>
 
-    import { GLTFLoader } from
-      'three/addons/loaders/GLTFLoader.js';
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { VRMLoaderPlugin } from
+  'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.min.js';
 
-    import { OrbitControls } from
-      'three/addons/controls/OrbitControls.js';
+const viewport = document.querySelector('#viewport');
+const status = document.querySelector('#status');
+const fileInput = document.querySelector('#file');
+const settingsFile = document.querySelector('#settingsFile');
 
-    import { VRMLoaderPlugin } from
-      'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.min.js';
+let currentVRM = null;
+let modelSize = 2;
+let originalCenter = new THREE.Vector3(0, 1, 0);
+let initialDistance = 4;
 
-    const viewport = document.querySelector('#viewport');
-    const status = document.querySelector('#status');
-    const fileInput = document.querySelector('#file');
-    const resetButton = document.querySelector('#rotate');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x252933);
 
-    let currentVRM = null;
-    let defaultCameraPosition = new THREE.Vector3(0, 1, 4);
-    let modelCenter = new THREE.Vector3(0, 1, 0);
-    let initialDistance = 4;
+const camera = new THREE.PerspectiveCamera(
+  35,
+  viewport.clientWidth / viewport.clientHeight,
+  0.01,
+  1000
+);
+camera.position.set(0, 1, 4);
 
-    try {
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x252933);
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  preserveDrawingBuffer: true
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+viewport.appendChild(renderer.domElement);
 
-      const camera = new THREE.PerspectiveCamera(
-        35,
-        viewport.clientWidth / viewport.clientHeight,
-        0.01,
-        1000
-      );
+scene.add(new THREE.HemisphereLight(0xffffff, 0x666677, 2));
 
-      camera.position.copy(defaultCameraPosition);
-      camera.lookAt(modelCenter);
+const light = new THREE.DirectionalLight(0xffffff, 2);
+light.position.set(2, 4, 5);
+scene.add(light);
 
-      const renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: false
-      });
+scene.add(new THREE.GridHelper(10, 20));
 
-      renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio || 1, 2)
-      );
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enableRotate = true;
+controls.enableZoom = true;
+controls.enablePan = false;
+controls.minDistance = 0.2;
+controls.maxDistance = 100;
+controls.target.copy(originalCenter);
+controls.update();
+controls.saveState();
 
-      renderer.setSize(
-        viewport.clientWidth,
-        viewport.clientHeight
-      );
+const loader = new GLTFLoader();
+loader.register(parser => new VRMLoaderPlugin(parser));
 
-      viewport.appendChild(renderer.domElement);
+const fields = {
+  x: document.querySelector('#posX'),
+  y: document.querySelector('#posY'),
+  z: document.querySelector('#posZ'),
+  rotY: document.querySelector('#rotY'),
+  scale: document.querySelector('#modelScale')
+};
 
-      // 照明
-      scene.add(
-        new THREE.HemisphereLight(
-          0xffffff, 0x666677, 2
-        )
-      );
+function getNumber(input, fallback = 0) {
+  const value = Number(input.value);
+  return Number.isFinite(value) ? value : fallback;
+}
 
-      const light = new THREE.DirectionalLight(
-        0xffffff, 2
-      );
+function getTransform() {
+  return {
+    x: getNumber(fields.x),
+    y: getNumber(fields.y),
+    z: getNumber(fields.z),
+    rotY: getNumber(fields.rotY),
+    scale: Math.max(0.1, Math.min(10, getNumber(fields.scale, 1)))
+  };
+}
 
-      light.position.set(2, 4, 5);
-      scene.add(light);
+function updateFields(transform) {
+  fields.x.value = transform.x;
+  fields.y.value = transform.y;
+  fields.z.value = transform.z;
+  fields.rotY.value = transform.rotY;
+  fields.scale.value = transform.scale;
+}
 
-      // 床のグリッド
-      const grid = new THREE.GridHelper(10, 20);
-      scene.add(grid);
+function applyTransform() {
+  if (!currentVRM) {
+    status.textContent = '先にVRMモデルを読み込んでね。';
+    return;
+  }
 
-      // スマホ対応カメラ操作
-      const controls = new OrbitControls(
-        camera,
-        renderer.domElement
-      );
+  const t = getTransform();
+  currentVRM.scene.position.set(t.x, t.y, t.z);
+  currentVRM.scene.rotation.y = THREE.MathUtils.degToRad(t.rotY);
+  currentVRM.scene.scale.setScalar(t.scale);
+  status.textContent = 'モデルの編集内容を反映したよ。';
+}
 
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.08;
+document.querySelector('#apply').addEventListener('click', applyTransform);
 
-      controls.enableRotate = true;
-      controls.enableZoom = true;
-      controls.enablePan = false;
+Object.values(fields).forEach(input => {
+  input.addEventListener('change', applyTransform);
+});
 
-      controls.minDistance = 0.2;
-      controls.maxDistance = 30;
+document.querySelector('#modelReset').addEventListener('click', () => {
+  updateFields({ x: 0, y: 0, z: 0, rotY: 0, scale: 1 });
+  applyTransform();
+});
 
-      controls.target.copy(modelCenter);
-      controls.update();
-      controls.saveState();
+function fitCamera() {
+  if (!currentVRM) return;
 
-      // VRMローダー
-      const loader = new GLTFLoader();
+  const bounds = new THREE.Box3().setFromObject(currentVRM.scene);
+  if (bounds.isEmpty()) return;
 
-      loader.register(
-        parser => new VRMLoaderPlugin(parser)
-      );
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+  modelSize = Math.max(size.x, size.y, size.z, 0.1);
+  originalCenter.copy(center);
 
-      status.textContent = '準備完了。VRMを選択してください。';
+  initialDistance = (modelSize / 2) /
+    Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.5;
 
-      fileInput.addEventListener('change', async () => {
-        const file = fileInput.files?.[0];
+  camera.position.set(center.x, center.y, center.z + initialDistance);
+  camera.near = Math.max(modelSize / 1000, 0.001);
+  camera.far = Math.max(modelSize * 100, 100);
+  camera.updateProjectionMatrix();
 
-        if (!file) {
-          status.textContent = 'ファイルが選択されていません。';
-          return;
-        }
+  controls.target.copy(center);
+  controls.update();
+  controls.saveState();
+}
 
-        let objectURL = null;
-        let newVRM = null;
+fileInput.addEventListener('change', async () => {
+  const file = fileInput.files?.[0];
+  if (!file) return;
 
-        status.textContent =
-          '読み込み中：' + file.name;
+  let url = null;
+  let newVRM = null;
+  status.textContent = '読み込み中：' + file.name;
 
-        try {
-          objectURL = URL.createObjectURL(file);
+  try {
+    url = URL.createObjectURL(file);
+    const gltf = await loader.loadAsync(url);
+    newVRM = gltf.userData.vrm;
 
-          const gltf = await loader.loadAsync(objectURL);
-          newVRM = gltf.userData.vrm;
+    if (!newVRM) {
+      throw new Error('VRMとして認識できませんでした。');
+    }
 
-          if (!newVRM) {
-            throw new Error(
-              'VRMとして認識できません。VRMファイルを確認してください。'
-            );
-          }
+    newVRM.scene.position.set(0, 0, 0);
+    newVRM.scene.rotation.set(0, 0, 0);
+    newVRM.scene.scale.setScalar(1);
 
-          const newScene = newVRM.scene;
+    newVRM.scene.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(newVRM.scene);
 
-          scene.add(newScene);
-          newScene.updateMatrixWorld(true);
+    if (bounds.isEmpty()) {
+      throw new Error('モデルの形状を取得できませんでした。');
+    }
 
-          // モデル全体の範囲を取得
-          const bounds = new THREE.Box3()
-            .setFromObject(newScene);
+    const oldVRM = currentVRM;
+    scene.add(newVRM.scene);
+    currentVRM = newVRM;
 
-          if (bounds.isEmpty()) {
-            scene.remove(newScene);
-            throw new Error(
-              'モデルの形状を取得できませんでした。'
-            );
-          }
+    if (oldVRM) scene.remove(oldVRM.scene);
 
-          const size = bounds.getSize(
-            new THREE.Vector3()
-          );
+    updateFields({ x: 0, y: 0, z: 0, rotY: 0, scale: 1 });
+    fitCamera();
 
-          modelCenter = bounds.getCenter(
-            new THREE.Vector3()
-          );
+    status.textContent = '読み込み成功！ モデルを編集できるよ。';
+  } catch (error) {
+    console.error(error);
+    if (newVRM && newVRM !== currentVRM) {
+      scene.remove(newVRM.scene);
+    }
+    status.textContent = '読み込み失敗：' + (error.message || String(error));
+  } finally {
+    if (url) URL.revokeObjectURL(url);
+    fileInput.value = '';
+  }
+});
 
-          const maxSize = Math.max(
-            size.x, size.y, size.z
-          );
+document.querySelector('#cameraReset').addEventListener('click', () => {
+  controls.reset();
+  status.textContent = 'カメラをリセットしたよ。';
+});
 
-          if (!Number.isFinite(maxSize) || maxSize <= 0) {
-            scene.remove(newScene);
-            throw new Error('モデルのサイズが不正です。');
-          }
+function getSaveData() {
+  if (!currentVRM) {
+    throw new Error('先にVRMモデルを読み込んでね。');
+  }
 
-          // モデルが画面に収まるカメラ距離
-          initialDistance =
-            (maxSize / 2) /
-            Math.tan(
-              THREE.MathUtils.degToRad(
-                camera.fov / 2
-              )
-            ) * 1.4;
+  return {
+    app: 'Mini Blender VRM',
+    formatVersion: 1,
+    savedAt: new Date().toISOString(),
+    transform: getTransform(),
+    camera: {
+      position: camera.position.toArray(),
+      target: controls.target.toArray(),
+      fov: camera.fov
+    }
+  };
+}
 
-          defaultCameraPosition.set(
-            modelCenter.x,
-            modelCenter.y,
-            modelCenter.z + initialDistance
-          );
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 
-          camera.position.copy(defaultCameraPosition);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
 
-          camera.near = Math.max(
-            maxSize / 1000, 0.001
-          );
+document.querySelector('#saveSettings').addEventListener('click', () => {
+  try {
+    applyTransform();
+    const data = getSaveData();
+    const blob = new Blob(
+      [JSON.stringify(data, null, 2)],
+      { type: 'application/json' }
+    );
+    downloadBlob(blob, 'mini-blender-settings.json');
+    status.textContent = '設定ファイルを保存したよ。';
+  } catch (error) {
+    status.textContent = error.message || String(error);
+  }
+});
 
-          camera.far = Math.max(
-            maxSize * 100, 100
-          );
+settingsFile.addEventListener('change', async () => {
+  const file = settingsFile.files?.[0];
+  if (!file) return;
 
+  try {
+    if (!currentVRM) {
+      throw new Error('先にVRMモデルを読み込んでね。');
+    }
+
+    const data = JSON.parse(await file.text());
+
+    if (
+      data.app !== 'Mini Blender VRM' ||
+      data.formatVersion !== 1 ||
+      !data.transform
+    ) {
+      throw new Error('対応していない設定ファイルです。');
+    }
+
+    const t = data.transform;
+    const values = [t.x, t.y, t.z, t.rotY, t.scale];
+
+    if (!values.every(v => Number.isFinite(v))) {
+      throw new Error('設定の数値が正しくありません。');
+    }
+
+    if (t.scale < 0.1 || t.scale > 10) {
+      throw new Error('大きさは0.1〜10の範囲にしてね。');
+    }
+
+    updateFields({
+      x: t.x,
+      y: t.y,
+      z: t.z,
+      rotY: t.rotY,
+      scale: t.scale
+    });
+    applyTransform();
+
+    if (data.camera) {
+      const p = data.camera.position;
+      const target = data.camera.target;
+
+      if (
+        Array.isArray(p) && p.length === 3 &&
+        Array.isArray(target) && target.length === 3 &&
+        [...p, ...target].every(Number.isFinite)
+      ) {
+        camera.position.fromArray(p);
+        controls.target.fromArray(target);
+
+        if (Number.isFinite(data.camera.fov)) {
+          camera.fov = Math.max(10, Math.min(100, data.camera.fov));
           camera.updateProjectionMatrix();
-
-          controls.target.copy(modelCenter);
-          controls.update();
-
-          // 新しいモデルが表示できたあとで古いモデルを外す
-          if (currentVRM) {
-            scene.remove(currentVRM.scene);
-          }
-
-          currentVRM = newVRM;
-
-          controls.target.copy(modelCenter);
-          controls.update();
-          controls.saveState();
-
-          status.textContent =
-            'VRM読み込み成功！ 指で回転・ズームできます。';
-
-        } catch (error) {
-          console.error('VRM読み込みエラー:', error);
-
-          if (newVRM && newVRM !== currentVRM) {
-            scene.remove(newVRM.scene);
-          }
-
-          status.textContent =
-            '読み込み失敗：' +
-            (error?.message || String(error));
-
-        } finally {
-          if (objectURL) {
-            URL.revokeObjectURL(objectURL);
-          }
-        }
-      });
-
-      // カメラを初期状態に戻す
-      resetButton.addEventListener('click', () => {
-        controls.reset();
-
-        status.textContent = currentVRM
-          ? 'カメラをリセットしました。'
-          : 'VRMモデルを読み込んでください。';
-      });
-
-      // 画面サイズの変化に対応
-      function resize() {
-        const width = viewport.clientWidth;
-        const height = viewport.clientHeight;
-
-        if (!width || !height) return;
-
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-
-        renderer.setSize(width, height);
-      }
-
-      window.addEventListener('resize', resize);
-
-      if ('ResizeObserver' in window) {
-        new ResizeObserver(resize).observe(viewport);
-      }
-
-      // 描画ループ
-      function animate() {
-        requestAnimationFrame(animate);
-
-        if (currentVRM) {
-          currentVRM.update(1 / 60);
         }
 
         controls.update();
-        renderer.render(scene, camera);
+        controls.saveState();
       }
-
-      animate();
-
-    } catch (error) {
-      console.error('起動エラー:', error);
-
-      status.textContent =
-        '起動失敗：' +
-        (error?.message || String(error));
     }
-  </script>
+
+    status.textContent = '設定を復元したよ！';
+  } catch (error) {
+    status.textContent = '設定読み込み失敗：' +
+      (error.message || String(error));
+  } finally {
+    settingsFile.value = '';
+  }
+});
+
+document.querySelector('#saveImage').addEventListener('click', () => {
+  try {
+    if (!currentVRM) {
+      throw new Error('先にVRMモデルを読み込んでね。');
+    }
+
+    renderer.render(scene, camera);
+    renderer.domElement.toBlob(blob => {
+      if (!blob) {
+        status.textContent = '画像を作成できませんでした。';
+        return;
+      }
+      downloadBlob(blob, 'mini-blender-model.png');
+      status.textContent = 'PNG画像を保存したよ。';
+    }, 'image/png');
+  } catch (error) {
+    status.textContent = '画像保存失敗：' +
+      (error.message || String(error));
+  }
+});
+
+function resize() {
+  const width = viewport.clientWidth;
+  const height = viewport.clientHeight;
+  if (!width || !height) return;
+
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+}
+
+window.addEventListener('resize', resize);
+
+if ('ResizeObserver' in window) {
+  new ResizeObserver(resize).observe(viewport);
+}
+
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (currentVRM) currentVRM.update(clock.getDelta());
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+resize();
+controls.saveState();
+status.textContent = '準備完了！ VRMを読み込んでね。';
+animate();
+</script>
 </body>
 </html>

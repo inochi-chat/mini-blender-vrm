@@ -110,7 +110,12 @@ button:active { opacity: .75; }
 <section>
   <h2>① モデル読み込み</h2>
   <div class="controls">
-    <label class="file-button" for="file">VRMを読み込む</label>
+<input
+  id="file"
+  type="file"
+  accept=".vrm,model/vrm"
+  style="display:block;width:100%;padding:12px;color:white;"
+>
     <button id="cameraReset" class="secondary" type="button">カメラリセット</button>
   </div>
   <input id="file" type="file" accept=".vrm,model/vrm">

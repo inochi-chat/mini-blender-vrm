@@ -19,32 +19,21 @@
 *{box-sizing:border-box}
 body{
   margin:0;background:#171923;color:#f3f4f6;
-  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif
 }
-header{
-  padding:13px 15px;background:#252938;
-  font-size:19px;font-weight:bold;
-}
+header{padding:13px 15px;background:#252938;font-size:19px;font-weight:bold}
 .note{font-size:12px;color:#b9c2d8;font-weight:normal;margin-top:5px}
-#viewport{
-  height:48dvh;min-height:270px;position:relative;
-  overflow:hidden;background:#202532;touch-action:none;
-}
+#viewport{height:43dvh;min-height:260px;position:relative;overflow:hidden;background:#202532;touch-action:none}
 #viewport canvas{display:block;width:100%;height:100%}
-#status{
-  padding:8px 12px;font-size:12px;color:#aee8ff;
-  background:#202532;min-height:32px;
-}
-.panel{padding:12px;display:grid;gap:10px}
-.section{
-  background:#252938;border-radius:12px;padding:11px;
-}
+#status{padding:9px 12px;font-size:12px;color:#aee8ff;background:#202532;min-height:34px}
+.panel{padding:10px;display:grid;gap:10px}
+.section{background:#252938;border-radius:12px;padding:11px;min-width:0}
 .section-title{font-size:14px;font-weight:bold;margin-bottom:9px}
 .row{display:flex;gap:7px;flex-wrap:wrap}
 button{
   background:#3a4258;color:white;border:1px solid #555f79;
-  border-radius:9px;padding:11px 12px;font-size:14px;
-  min-height:42px;touch-action:manipulation;
+  border-radius:9px;padding:10px 11px;font-size:14px;
+  min-height:42px;touch-action:manipulation
 }
 button:active{background:#596987}
 button.active{background:#176d91;border-color:#65d9ff}
@@ -55,6 +44,7 @@ button:disabled{opacity:.35}
 input[type=color]{width:48px;height:42px;border:0;background:transparent}
 #objectList{display:flex;gap:7px;flex-wrap:wrap}
 #objectList button{flex:1}
+input[type=number]{width:85px;min-height:40px;background:#171923;color:white;border:1px solid #555f79;border-radius:8px;padding:8px}
 @media(min-width:750px){
   #viewport{height:55vh}
   .panel{grid-template-columns:1fr 1fr}
@@ -64,11 +54,11 @@ input[type=color]{width:48px;height:42px;border:0;background:transparent}
 <body>
 <header>
   Mini Blender VRM
-  <div class="note">Mesh Editor — 頂点・辺・面の編集テスト</div>
+  <div class="note">Mesh Editor — 押し出し・分割・取り消し</div>
 </header>
 
 <div id="viewport"></div>
-<div id="status">準備中…</div>
+<div id="status">3D画面を準備中…</div>
 
 <div class="panel">
   <section class="section">
@@ -78,24 +68,37 @@ input[type=color]{width:48px;height:42px;border:0;background:transparent}
       <button id="addSphere">＋ 球</button>
       <button id="addCylinder">＋ 円柱</button>
     </div>
-    <div class="small">追加したオブジェクトをタップして選択できるよ。</div>
+    <div class="small">オブジェクトを追加したら、物体モードで選択できるよ。</div>
   </section>
 
   <section class="section">
     <div class="section-title">② 編集モード</div>
     <div class="row">
-      <button id="vertexMode" class="active">頂点</button>
+      <button id="vertexMode">頂点</button>
       <button id="edgeMode">辺</button>
-      <button id="faceMode">面</button>
+      <button id="faceMode" class="active">面</button>
       <button id="objectMode">物体</button>
     </div>
-    <div class="small" id="modeHelp">
-      頂点モード：角の点をタップして選択し、移動ボタンで変形する。
+    <div class="small" id="modeHelp">面をタップして選択してね。</div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">③ 面の押し出し・分割</div>
+    <div class="row" style="align-items:center">
+      <label for="extrudeAmount" class="small">押し出し量</label>
+      <input id="extrudeAmount" type="number" value="0.3" min="0.05" max="3" step="0.05">
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="extrudeFace">面を押し出す</button>
+      <button id="subdivideFace">面を4分割</button>
+    </div>
+    <div class="small">
+      面モードで三角形の面を選択してから使ってね。押し出しは選択面を伸ばして側面を作るよ。
     </div>
   </section>
 
   <section class="section">
-    <div class="section-title">③ 選択部分を移動</div>
+    <div class="section-title">④ 選択部分を移動</div>
     <div class="row">
       <button id="xMinus">X −</button>
       <button id="xPlus">X ＋</button>
@@ -113,14 +116,13 @@ input[type=color]{width:48px;height:42px;border:0;background:transparent}
       <button id="larger">拡大</button>
       <button id="resetTransform">変形リセット</button>
     </div>
-    <div class="small">移動量は1回につき0.15。選択した頂点・辺・面を少しずつ動かす。</div>
+    <div class="small">頂点・辺・面の選択中は、その部分を移動するよ。</div>
   </section>
 
   <section class="section">
-    <div class="section-title">④ オブジェクトと色</div>
+    <div class="section-title">⑤ オブジェクトと色</div>
     <div id="objectList"></div>
     <div class="row" style="margin-top:8px;align-items:center">
-      <span style="font-size:13px">色変更</span>
       <input id="colorPicker" type="color" value="#69a8ff">
       <button id="applyColor">色を適用</button>
       <button id="deleteObject" class="danger">削除</button>
@@ -128,15 +130,18 @@ input[type=color]{width:48px;height:42px;border:0;background:transparent}
   </section>
 
   <section class="section">
-    <div class="section-title">⑤ カメラ・編集補助</div>
+    <div class="section-title">⑥ 編集の取り消し</div>
     <div class="row">
-      <button id="resetCamera">カメラを戻す</button>
+      <button id="undoButton">↶ 直前の編集を取り消す</button>
       <button id="clearSelection">選択解除</button>
     </div>
-    <div class="small">
-      画面をドラッグして視点を回転、2本指で拡大縮小。
-      頂点・辺・面を選択してから移動ボタンを押してね。
-    </div>
+    <div class="small">編集操作を元に戻すための履歴を最大20段階保存するよ。</div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">⑦ カメラ</div>
+    <button id="resetCamera">カメラを戻す</button>
+    <div class="small">ドラッグで視点を回転、2本指で拡大縮小。</div>
   </section>
 </div>
 
@@ -145,276 +150,363 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 
-const viewport = document.getElementById("viewport");
-const status = document.getElementById("status");
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x202532);
+const viewport=document.getElementById("viewport");
+const status=document.getElementById("status");
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x202532);
 
-const camera = new THREE.PerspectiveCamera(
-  45, viewport.clientWidth / viewport.clientHeight, 0.1, 1000
+const camera=new THREE.PerspectiveCamera(
+  45,viewport.clientWidth/viewport.clientHeight,0.1,1000
 );
-camera.position.set(4, 3.2, 6);
+camera.position.set(4,3.2,6);
 
-const renderer = new THREE.WebGLRenderer({antialias:true, alpha:false});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setSize(viewport.clientWidth,viewport.clientHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
 viewport.appendChild(renderer.domElement);
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.target.set(0, 1, 0);
-controls.minDistance = 2;
-controls.maxDistance = 25;
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.target.set(0,0.8,0);
+controls.minDistance=2;
+controls.maxDistance=25;
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x657087, 2));
-const light = new THREE.DirectionalLight(0xffffff, 2.3);
-light.position.set(4, 8, 5);
+scene.add(new THREE.HemisphereLight(0xffffff,0x657087,2));
+const light=new THREE.DirectionalLight(0xffffff,2.3);
+light.position.set(4,8,5);
 scene.add(light);
+scene.add(new THREE.GridHelper(20,20,0x71809b,0x41495c));
 
-const grid = new THREE.GridHelper(20, 20, 0x71809b, 0x41495c);
-scene.add(grid);
+const raycaster=new THREE.Raycaster();
+const pointer=new THREE.Vector2();
+raycaster.params.Points.threshold=0.22;
+raycaster.params.Line.threshold=0.13;
 
-const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2();
-raycaster.params.Points.threshold = 0.22;
-raycaster.params.Line.threshold = 0.13;
+let objects=[];
+let selectedObject=null;
+let mode="face";
+let selectedVertex=-1;
+let selectedEdge=null;
+let selectedFace=null;
+let edgeLookup=[];
+let downX=0,downY=0;
+let history=[];
 
-let objects = [];
-let selectedObject = null;
-let mode = "vertex";
-let selectedVertex = -1;
-let selectedEdge = null;
-let selectedFace = null;
-let helperGroup = new THREE.Group();
+const helperGroup=new THREE.Group();
 scene.add(helperGroup);
 
-let nextName = 1;
-let downX = 0, downY = 0;
-
-const vertexMaterial = new THREE.PointsMaterial({
+const vertexMaterial=new THREE.PointsMaterial({
   color:0xffd54f,size:13,sizeAttenuation:false,depthTest:false
 });
-const selectedVertexMaterial = new THREE.PointsMaterial({
+const selectedVertexMaterial=new THREE.PointsMaterial({
   color:0xff4d67,size:19,sizeAttenuation:false,depthTest:false
 });
-const edgeMaterial = new THREE.LineBasicMaterial({
+const edgeMaterial=new THREE.LineBasicMaterial({
   color:0x7ee7ff,depthTest:false
 });
-const selectedEdgeMaterial = new THREE.LineBasicMaterial({
-  color:0xff4d67,linewidth:3,depthTest:false
+const selectedEdgeMaterial=new THREE.LineBasicMaterial({
+  color:0xff4d67,depthTest:false
 });
-const selectedFaceMaterial = new THREE.MeshBasicMaterial({
+const selectedFaceMaterial=new THREE.MeshBasicMaterial({
   color:0xffc857,transparent:true,opacity:0.5,
   side:THREE.DoubleSide,depthTest:false
 });
 
-function say(message){ status.textContent = message; }
+function say(s){status.textContent=s}
 
-function makeEditableGeometry(geometry){
-  const merged = mergeVertices(geometry, 0.0001);
-  merged.computeVertexNormals();
-  return merged;
+function editableGeometry(g){
+  const out=mergeVertices(g,0.0001);
+  out.computeVertexNormals();
+  return out;
+}
+
+function readGeometry(mesh){
+  const g=mesh.geometry;
+  return {
+    positions:Array.from(g.attributes.position.array),
+    indices:g.index?Array.from(g.index.array):null
+  };
+}
+
+function geometryFromData(data){
+  const g=new THREE.BufferGeometry();
+  g.setAttribute("position",new THREE.Float32BufferAttribute(data.positions,3));
+  if(data.indices)g.setIndex(data.indices);
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+  return g;
+}
+
+function saveUndo(){
+  const snapshot={
+    objects:objects.map(m=>({
+      type:m.userData.type,
+      name:m.userData.name,
+      geometry:readGeometry(m),
+      position:m.position.toArray(),
+      rotation:m.rotation.toArray(),
+      scale:m.scale.toArray(),
+      color:"#"+m.material.color.getHexString(),
+      originalPosition:m.userData.originalPosition.toArray(),
+      originalRotation:m.userData.originalRotation.toArray(),
+      originalScale:m.userData.originalScale.toArray(),
+      originalVertices:m.userData.originalVertices
+        ? m.userData.originalVertices.map(v=>v.toArray()):null
+    })),
+    selectedIndex:objects.indexOf(selectedObject),
+    mode
+  };
+  history.push(snapshot);
+  if(history.length>20)history.shift();
+  document.getElementById("undoButton").disabled=false;
+}
+
+function undo(){
+  if(!history.length){
+    say("取り消せる編集がないよ。");
+    return;
+  }
+  const s=history.pop();
+  for(const m of objects){
+    scene.remove(m);
+    m.geometry.dispose();
+    m.material.dispose();
+  }
+  objects=[];
+  selectedObject=null;
+  selectedVertex=-1;
+  selectedEdge=null;
+  selectedFace=null;
+
+  for(const item of s.objects){
+    const m=new THREE.Mesh(
+      geometryFromData(item.geometry),
+      new THREE.MeshStandardMaterial({
+        color:item.color,roughness:0.7,metalness:0.05,side:THREE.DoubleSide
+      })
+    );
+    m.userData.type=item.type;
+    m.userData.name=item.name;
+    m.position.fromArray(item.position);
+    m.rotation.fromArray(item.rotation);
+    m.scale.fromArray(item.scale);
+    m.userData.originalPosition=new THREE.Vector3().fromArray(item.originalPosition);
+    m.userData.originalRotation=new THREE.Euler().fromArray(item.originalRotation);
+    m.userData.originalScale=new THREE.Vector3().fromArray(item.originalScale);
+    if(item.originalVertices){
+      m.userData.originalVertices=item.originalVertices.map(
+        v=>new THREE.Vector3().fromArray(v)
+      );
+    }
+    scene.add(m);
+    objects.push(m);
+  }
+  selectedObject=s.selectedIndex>=0?objects[s.selectedIndex]||null:null;
+  mode=s.mode||"face";
+  updateModeButtons();
+  updateObjectList();
+  drawHelpers();
+  document.getElementById("undoButton").disabled=history.length===0;
+  say("直前の編集を取り消したよ。");
+}
+
+function saveOriginalVertices(mesh){
+  const p=mesh.geometry.attributes.position;
+  mesh.userData.originalVertices=[];
+  for(let i=0;i<p.count;i++){
+    mesh.userData.originalVertices.push(
+      new THREE.Vector3(p.getX(i),p.getY(i),p.getZ(i))
+    );
+  }
 }
 
 function addObject(type){
-  let geometry;
-  if(type === "箱") geometry = new THREE.BoxGeometry(1.5,1.5,1.5);
-  if(type === "球") geometry = new THREE.SphereGeometry(0.8,12,8);
-  if(type === "円柱") geometry = new THREE.CylinderGeometry(0.65,0.65,1.5,12);
+  let g;
+  if(type==="箱")g=new THREE.BoxGeometry(1.5,1.5,1.5);
+  if(type==="球")g=new THREE.SphereGeometry(0.8,12,8);
+  if(type==="円柱")g=new THREE.CylinderGeometry(0.65,0.65,1.5,12);
+  g=editableGeometry(g);
+  saveUndo();
 
-  geometry = makeEditableGeometry(geometry);
-
-  const material = new THREE.MeshStandardMaterial({
-    color:0x69a8ff,roughness:0.7,metalness:0.05,
-    side:THREE.DoubleSide
-  });
-  const mesh = new THREE.Mesh(geometry,material);
-  mesh.position.set((objects.length % 3) * 1.8 - 1.8,0.8,0);
-  mesh.userData.name = type + objects.filter(o=>o.userData.type===type).length;
-  mesh.userData.type = type;
-  mesh.userData.originalPosition = mesh.position.clone();
-  mesh.userData.originalScale = mesh.scale.clone();
-  mesh.userData.originalRotation = mesh.rotation.clone();
-
-  scene.add(mesh);
-  objects.push(mesh);
-  selectObject(mesh);
-  updateObjectList();
-  say(type + "を追加したよ。");
+  const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({
+    color:0x69a8ff,roughness:0.7,metalness:0.05,side:THREE.DoubleSide
+  }));
+  m.position.set((objects.length%3)*1.8-1.8,0.8,0);
+  m.userData.type=type;
+  m.userData.name=type+objects.filter(o=>o.userData.type===type).length;
+  m.userData.originalPosition=m.position.clone();
+  m.userData.originalScale=m.scale.clone();
+  m.userData.originalRotation=m.rotation.clone();
+  saveOriginalVertices(m);
+  scene.add(m);
+  objects.push(m);
+  selectObject(m);
+  say(type+"を追加したよ。");
 }
 
 function clearHelpers(){
   while(helperGroup.children.length){
-    const child = helperGroup.children.pop();
-    if(child.geometry) child.geometry.dispose();
-    if(child.material && child.material !== vertexMaterial &&
-       child.material !== selectedVertexMaterial &&
-       child.material !== edgeMaterial &&
-       child.material !== selectedEdgeMaterial &&
-       child.material !== selectedFaceMaterial){
-      child.material.dispose();
-    }
+    const c=helperGroup.children[0];
+    helperGroup.remove(c);
+    if(c.geometry)c.geometry.dispose();
   }
 }
 
-function edgePairs(geometry){
-  const index = geometry.index;
-  const position = geometry.attributes.position;
-  const pairs = new Map();
-
+function edgePairs(g){
+  const idx=g.index;
+  const p=g.attributes.position;
+  const map=new Map();
   function add(a,b){
     if(a===b)return;
-    const lo=Math.min(a,b), hi=Math.max(a,b);
-    pairs.set(lo+"_"+hi,[lo,hi]);
+    const lo=Math.min(a,b),hi=Math.max(a,b);
+    map.set(lo+"_"+hi,[lo,hi]);
   }
-
-  if(index){
-    for(let i=0;i<index.count;i+=3){
-      const a=index.getX(i), b=index.getX(i+1), c=index.getX(i+2);
+  if(idx){
+    for(let i=0;i<idx.count;i+=3){
+      const a=idx.getX(i),b=idx.getX(i+1),c=idx.getX(i+2);
       add(a,b);add(b,c);add(c,a);
     }
   }else{
-    for(let i=0;i<position.count;i+=3){
+    for(let i=0;i<p.count;i+=3){
       add(i,i+1);add(i+1,i+2);add(i+2,i);
     }
   }
-  return [...pairs.values()];
+  return [...map.values()];
 }
-
-let edgeLookup = [];
 
 function drawHelpers(){
   clearHelpers();
-  edgeLookup = [];
+  edgeLookup=[];
   if(!selectedObject)return;
 
-  const geometry = selectedObject.geometry;
-  const position = geometry.attributes.position;
-  const points = [];
-  for(let i=0;i<position.count;i++){
-    points.push(position.getX(i),position.getY(i),position.getZ(i));
+  const g=selectedObject.geometry;
+  const p=g.attributes.position;
+  const pointData=[];
+  for(let i=0;i<p.count;i++){
+    pointData.push(p.getX(i),p.getY(i),p.getZ(i));
   }
+  const pg=new THREE.BufferGeometry();
+  pg.setAttribute("position",new THREE.Float32BufferAttribute(pointData,3));
+  const points=new THREE.Points(pg,vertexMaterial);
+  points.userData.helperType="vertices";
+  points.renderOrder=10;
+  helperGroup.add(points);
 
-  const pointGeometry = new THREE.BufferGeometry();
-  pointGeometry.setAttribute("position",
-    new THREE.Float32BufferAttribute(points,3));
-  const pointCloud = new THREE.Points(pointGeometry,vertexMaterial);
-  pointCloud.userData.helperType="vertices";
-  pointCloud.renderOrder=10;
-  helperGroup.add(pointCloud);
-
-  const pairs = edgePairs(geometry);
-  const lineCoords = [];
-  edgeLookup = pairs;
-  for(const [a,b] of pairs){
-    lineCoords.push(
-      position.getX(a),position.getY(a),position.getZ(a),
-      position.getX(b),position.getY(b),position.getZ(b)
+  edgeLookup=edgePairs(g);
+  const lineData=[];
+  for(const [a,b] of edgeLookup){
+    lineData.push(
+      p.getX(a),p.getY(a),p.getZ(a),
+      p.getX(b),p.getY(b),p.getZ(b)
     );
   }
-  const lineGeometry = new THREE.BufferGeometry();
-  lineGeometry.setAttribute("position",
-    new THREE.Float32BufferAttribute(lineCoords,3));
-  const lines = new THREE.LineSegments(lineGeometry,edgeMaterial);
+  const lg=new THREE.BufferGeometry();
+  lg.setAttribute("position",new THREE.Float32BufferAttribute(lineData,3));
+  const lines=new THREE.LineSegments(lg,edgeMaterial);
   lines.userData.helperType="edges";
   lines.renderOrder=9;
   helperGroup.add(lines);
 
-  if(mode==="vertex" && selectedVertex>=0 &&
-     selectedVertex<position.count){
-    const p = new THREE.Vector3(
-      position.getX(selectedVertex),
-      position.getY(selectedVertex),
-      position.getZ(selectedVertex)
-    );
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position",
-      new THREE.Float32BufferAttribute([p.x,p.y,p.z],3));
-    const marker = new THREE.Points(g,selectedVertexMaterial);
-    marker.renderOrder=12;
-    helperGroup.add(marker);
-  }
-
-  if(mode==="edge" && selectedEdge){
-    const a=selectedEdge[0],b=selectedEdge[1];
-    const g=new THREE.BufferGeometry();
-    g.setAttribute("position",new THREE.Float32BufferAttribute([
-      position.getX(a),position.getY(a),position.getZ(a),
-      position.getX(b),position.getY(b),position.getZ(b)
+  if(mode==="vertex"&&selectedVertex>=0&&selectedVertex<p.count){
+    const i=selectedVertex;
+    const sg=new THREE.BufferGeometry();
+    sg.setAttribute("position",new THREE.Float32BufferAttribute([
+      p.getX(i),p.getY(i),p.getZ(i)
     ],3));
-    const l=new THREE.LineSegments(g,selectedEdgeMaterial);
-    l.renderOrder=12;
-    helperGroup.add(l);
+    const mark=new THREE.Points(sg,selectedVertexMaterial);
+    mark.renderOrder=12;
+    helperGroup.add(mark);
   }
 
-  if(mode==="face" && selectedFace){
-    const g=geometry.clone();
-    const pos=g.attributes.position;
-    const indices=g.index;
-    const ids=indices
-      ? [indices.getX(selectedFace*3),indices.getX(selectedFace*3+1),indices.getX(selectedFace*3+2)]
-      : [selectedFace*3,selectedFace*3+1,selectedFace*3+2];
-    const arr=[];
-    for(const i of ids) arr.push(pos.getX(i),pos.getY(i),pos.getZ(i));
-    g.dispose();
-    const faceG=new THREE.BufferGeometry();
-    faceG.setAttribute("position",new THREE.Float32BufferAttribute(arr,3));
-    faceG.computeVertexNormals();
-    const faceMesh=new THREE.Mesh(faceG,selectedFaceMaterial);
-    faceMesh.renderOrder=11;
-    helperGroup.add(faceMesh);
+  if(mode==="edge"&&selectedEdge){
+    const [a,b]=selectedEdge;
+    const sg=new THREE.BufferGeometry();
+    sg.setAttribute("position",new THREE.Float32BufferAttribute([
+      p.getX(a),p.getY(a),p.getZ(a),
+      p.getX(b),p.getY(b),p.getZ(b)
+    ],3));
+    const line=new THREE.LineSegments(sg,selectedEdgeMaterial);
+    line.renderOrder=12;
+    helperGroup.add(line);
+  }
+
+  if(mode==="face"&&selectedFace!==null){
+    const ids=getFaceIds(g,selectedFace);
+    if(ids){
+      const arr=[];
+      for(const i of ids)arr.push(p.getX(i),p.getY(i),p.getZ(i));
+      const fg=new THREE.BufferGeometry();
+      fg.setAttribute("position",new THREE.Float32BufferAttribute(arr,3));
+      fg.computeVertexNormals();
+      const face=new THREE.Mesh(fg,selectedFaceMaterial);
+      face.renderOrder=11;
+      helperGroup.add(face);
+    }
   }
 }
 
-function selectObject(mesh){
-  selectedObject=mesh;
+function getFaceIds(g,faceIndex){
+  const idx=g.index;
+  const start=faceIndex*3;
+  if(idx){
+    if(start+2>=idx.count)return null;
+    return [idx.getX(start),idx.getX(start+1),idx.getX(start+2)];
+  }
+  const count=g.attributes.position.count;
+  if(start+2>=count)return null;
+  return [start,start+1,start+2];
+}
+
+function selectObject(m){
+  selectedObject=m;
   selectedVertex=-1;
   selectedEdge=null;
   selectedFace=null;
   updateObjectList();
   drawHelpers();
-  if(mesh) say("選択中：" + mesh.userData.name);
+  if(m)say("選択中："+m.userData.name);
 }
 
 function updateObjectList(){
   const list=document.getElementById("objectList");
   list.innerHTML="";
-  for(const mesh of objects){
-    const button=document.createElement("button");
-    button.textContent=(mesh===selectedObject?"● ":"")+mesh.userData.name;
-    if(mesh===selectedObject)button.classList.add("active");
-    button.addEventListener("click",()=>selectObject(mesh));
-    list.appendChild(button);
+  for(const m of objects){
+    const b=document.createElement("button");
+    b.textContent=(m===selectedObject?"● ":"")+m.userData.name;
+    if(m===selectedObject)b.classList.add("active");
+    b.onclick=()=>selectObject(m);
+    list.appendChild(b);
   }
 }
 
-function setMode(newMode){
-  mode=newMode;
+function updateModeButtons(){
+  const ids={vertex:"vertexMode",edge:"edgeMode",face:"faceMode",object:"objectMode"};
+  Object.values(ids).forEach(id=>document.getElementById(id).classList.remove("active"));
+  document.getElementById(ids[mode]).classList.add("active");
+  const help={
+    vertex:"黄色い点をタップして選択。移動ボタンで頂点を動かす。",
+    edge:"辺をタップして選択。両端の頂点を一緒に動かす。",
+    face:"三角形の面をタップして選択。押し出しや分割ができる。",
+    object:"物体をタップして選択。移動ボタンで全体を動かす。"
+  };
+  document.getElementById("modeHelp").textContent=help[mode];
+}
+
+function setMode(next){
+  mode=next;
   selectedVertex=-1;
   selectedEdge=null;
   selectedFace=null;
-  for(const id of ["vertexMode","edgeMode","faceMode","objectMode"]){
-    document.getElementById(id).classList.remove("active");
-  }
-  const ids={vertex:"vertexMode",edge:"edgeMode",face:"faceMode",object:"objectMode"};
-  document.getElementById(ids[mode]).classList.add("active");
-
-  const help={
-    vertex:"頂点モード：角の点をタップして選択し、移動ボタンで変形する。",
-    edge:"辺モード：青い辺をタップして選択。両端の頂点を一緒に動かす。",
-    face:"面モード：面をタップして選択。選んだ三角形の頂点を一緒に動かす。",
-    object:"物体モード：オブジェクトをタップして選択。移動ボタンで物体全体を動かす。"
-  };
-  document.getElementById("modeHelp").textContent=help[mode];
+  updateModeButtons();
   drawHelpers();
-  say("編集モード：" + mode);
+  say("編集モード："+mode);
 }
 
-function pointerToNDC(event){
-  const rect=renderer.domElement.getBoundingClientRect();
-  pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
-  pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
+function pointerToNDC(e){
+  const r=renderer.domElement.getBoundingClientRect();
+  pointer.x=((e.clientX-r.left)/r.width)*2-1;
+  pointer.y=-((e.clientY-r.top)/r.height)*2+1;
 }
 
 renderer.domElement.addEventListener("pointerdown",e=>{
@@ -431,77 +523,64 @@ renderer.domElement.addEventListener("pointerup",e=>{
     if(hits.length)selectObject(hits[0].object);
     return;
   }
-
   if(!selectedObject){
     say("先にオブジェクトを追加してね。");
     return;
   }
 
-  const geometry=selectedObject.geometry;
-  const position=geometry.attributes.position;
-
+  const g=selectedObject.geometry;
   if(mode==="vertex"){
-    const hits=raycaster.intersectObject(helperGroup.children.find(c=>c.userData.helperType==="vertices"));
+    const target=helperGroup.children.find(c=>c.userData.helperType==="vertices");
+    const hits=target?raycaster.intersectObject(target):[];
     if(hits.length){
       selectedVertex=hits[0].index;
       selectedEdge=null;selectedFace=null;
       drawHelpers();
-      say("頂点 " + selectedVertex + " を選択中");
-    }else{
-      say("黄色い頂点をタップして選択してね。");
-    }
+      say("頂点を選択したよ。");
+    }else say("黄色い頂点をタップしてね。");
   }
 
   if(mode==="edge"){
-    const lines=helperGroup.children.find(c=>c.userData.helperType==="edges");
-    const hits=lines?raycaster.intersectObject(lines):[];
+    const target=helperGroup.children.find(c=>c.userData.helperType==="edges");
+    const hits=target?raycaster.intersectObject(target):[];
     if(hits.length){
-      const index=hits[0].index;
-      const pairIndex=Math.floor(index/2);
+      const pairIndex=Math.floor(hits[0].index/2);
       if(edgeLookup[pairIndex]){
         selectedEdge=edgeLookup[pairIndex];
         selectedVertex=-1;selectedFace=null;
         drawHelpers();
-        say("辺を選択中。両端を一緒に動かせるよ。");
+        say("辺を選択したよ。");
       }
-    }else{
-      say("辺をタップして選択してね。");
-    }
+    }else say("青い辺をタップしてね。");
   }
 
   if(mode==="face"){
     const hits=raycaster.intersectObject(selectedObject,false);
-    if(hits.length){
-      const hit=hits[0];
-      if(hit.face){
-        const ids=geometry.index
-          ? [geometry.index.getX(hit.faceIndex*3),geometry.index.getX(hit.faceIndex*3+1),geometry.index.getX(hit.faceIndex*3+2)]
-          : [hit.faceIndex*3,hit.faceIndex*3+1,hit.faceIndex*3+2];
-        selectedFace=hit.faceIndex;
-        selectedEdge=null;selectedVertex=-1;
-        selectedObject.userData.faceVertices=ids;
-        drawHelpers();
-        say("面を選択中。選択面を移動できるよ。");
-      }
-    }else{
-      say("面をタップして選択してね。");
-    }
+    if(hits.length&&hits[0].faceIndex!==undefined){
+      selectedFace=hits[0].faceIndex;
+      selectedObject.userData.faceVertices=getFaceIds(g,selectedFace);
+      selectedVertex=-1;selectedEdge=null;
+      drawHelpers();
+      say("面を選択したよ。押し出しや分割を試してね。");
+    }else say("面をタップして選択してね。");
   }
 });
 
 function updateGeometry(){
   if(!selectedObject)return;
-  selectedObject.geometry.attributes.position.needsUpdate=true;
-  selectedObject.geometry.computeVertexNormals();
-  selectedObject.geometry.computeBoundingSphere();
+  const g=selectedObject.geometry;
+  g.attributes.position.needsUpdate=true;
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
   drawHelpers();
 }
 
 function moveSelection(axis,amount){
   if(!selectedObject){
-    say("先にオブジェクトを追加してね。");
+    say("先にオブジェクトを選んでね。");
     return;
   }
+  saveUndo();
 
   if(mode==="object"){
     selectedObject.position[axis]+=amount;
@@ -509,31 +588,138 @@ function moveSelection(axis,amount){
     return;
   }
 
-  const geometry=selectedObject.geometry;
-  const pos=geometry.attributes.position;
+  const p=selectedObject.geometry.attributes.position;
   let ids=[];
-
-  if(mode==="vertex" && selectedVertex>=0){
-    ids=[selectedVertex];
-  }else if(mode==="edge" && selectedEdge){
-    ids=[...selectedEdge];
-  }else if(mode==="face" && selectedFace!==null){
-    ids=selectedObject.userData.faceVertices || [];
-  }else{
-    say("先に頂点・辺・面をタップして選択してね。");
+  if(mode==="vertex"&&selectedVertex>=0)ids=[selectedVertex];
+  else if(mode==="edge"&&selectedEdge)ids=[...selectedEdge];
+  else if(mode==="face"&&selectedFace!==null)
+    ids=selectedObject.userData.faceVertices||[];
+  else{
+    history.pop();
+    say("先に頂点・辺・面を選択してね。");
     return;
   }
 
-  for(const id of [...new Set(ids)]){
-    const value=axis==="x" ? pos.getX(id)
-      : axis==="y" ? pos.getY(id) : pos.getZ(id);
-    if(axis==="x")pos.setX(id,value+amount);
-    if(axis==="y")pos.setY(id,value+amount);
-    if(axis==="z")pos.setZ(id,value+amount);
+  for(const i of [...new Set(ids)]){
+    if(axis==="x")p.setX(i,p.getX(i)+amount);
+    if(axis==="y")p.setY(i,p.getY(i)+amount);
+    if(axis==="z")p.setZ(i,p.getZ(i)+amount);
+  }
+  updateGeometry();
+  say("選択部分を移動したよ。");
+}
+
+function rebuildGeometry(mesh,positions,indices){
+  const old=mesh.geometry;
+  mesh.geometry=geometryFromData({positions,indices});
+  old.dispose();
+}
+
+function extrudeFace(){
+  if(mode!=="face"||selectedFace===null||!selectedObject){
+    say("面モードで三角形の面を選択してね。");
+    return;
+  }
+  const amount=Number(document.getElementById("extrudeAmount").value);
+  if(!Number.isFinite(amount)||amount<=0||amount>3){
+    say("押し出し量は0より大きく3以下にしてね。");
+    return;
   }
 
-  updateGeometry();
-  say("選択部分を " + axis.toUpperCase() + " 方向へ移動したよ。");
+  const mesh=selectedObject;
+  const g=mesh.geometry;
+  if(!g.index){
+    say("この形状はインデックス付きメッシュではないため押し出せないよ。");
+    return;
+  }
+  const ids=getFaceIds(g,selectedFace);
+  if(!ids){say("面を選び直してね。");return;}
+
+  saveUndo();
+  const p=g.attributes.position;
+  const positions=Array.from(p.array);
+  const indices=Array.from(g.index.array);
+  const [a,b,c]=ids;
+
+  const va=new THREE.Vector3(p.getX(a),p.getY(a),p.getZ(a));
+  const vb=new THREE.Vector3(p.getX(b),p.getY(b),p.getZ(b));
+  const vc=new THREE.Vector3(p.getX(c),p.getY(c),p.getZ(c));
+  const normal=new THREE.Vector3()
+    .subVectors(vb,va).cross(new THREE.Vector3().subVectors(vc,va))
+    .normalize();
+
+  if(normal.lengthSq()<0.000001){
+    history.pop();say("この面は押し出せない形だよ。");return;
+  }
+
+  const newIds=[];
+  for(const v of [va,vb,vc]){
+    const nv=v.clone().addScaledVector(normal,amount);
+    newIds.push(positions.length/3);
+    positions.push(nv.x,nv.y,nv.z);
+  }
+
+  const offset=selectedFace*3;
+  indices[offset]=newIds[0];
+  indices[offset+1]=newIds[1];
+  indices[offset+2]=newIds[2];
+
+  for(let i=0;i<3;i++){
+    const j=(i+1)%3;
+    const oldA=ids[i],oldB=ids[j];
+    const newA=newIds[i],newB=newIds[j];
+    indices.push(oldA,oldB,newB);
+    indices.push(oldA,newB,newA);
+  }
+
+  rebuildGeometry(mesh,positions,indices);
+  selectedObject.userData.faceVertices=newIds;
+  drawHelpers();
+  say("面を押し出したよ。続けて形を調整できるよ。");
+}
+
+function subdivideFace(){
+  if(mode!=="face"||selectedFace===null||!selectedObject){
+    say("面モードで三角形の面を選択してね。");
+    return;
+  }
+  const mesh=selectedObject;
+  const g=mesh.geometry;
+  if(!g.index){say("この形状は分割できないよ。");return;}
+  const ids=getFaceIds(g,selectedFace);
+  if(!ids){say("面を選び直してね。");return;}
+
+  saveUndo();
+  const p=g.attributes.position;
+  const positions=Array.from(p.array);
+  const indices=Array.from(g.index.array);
+  const [a,b,c]=ids;
+
+  function midpoint(i,j){
+    const v=new THREE.Vector3(p.getX(i),p.getY(i),p.getZ(i));
+    v.add(new THREE.Vector3(p.getX(j),p.getY(j),p.getZ(j))).multiplyScalar(0.5);
+    const id=positions.length/3;
+    positions.push(v.x,v.y,v.z);
+    return id;
+  }
+
+  const ab=midpoint(a,b);
+  const bc=midpoint(b,c);
+  const ca=midpoint(c,a);
+  const offset=selectedFace*3;
+
+  indices.splice(offset,3,
+    a,ab,ca,
+    ab,b,bc,
+    ca,bc,c,
+    ab,bc,ca
+  );
+
+  rebuildGeometry(mesh,positions,indices);
+  selectedFace=selectedFace;
+  selectedObject.userData.faceVertices=[a,ab,ca];
+  drawHelpers();
+  say("選択面を4つの三角形に分割したよ。");
 }
 
 document.getElementById("addBox").onclick=()=>addObject("箱");
@@ -552,80 +738,82 @@ document.getElementById("yPlus").onclick=()=>moveSelection("y",0.15);
 document.getElementById("zMinus").onclick=()=>moveSelection("z",-0.15);
 document.getElementById("zPlus").onclick=()=>moveSelection("z",0.15);
 
+document.getElementById("extrudeFace").onclick=extrudeFace;
+document.getElementById("subdivideFace").onclick=subdivideFace;
+document.getElementById("undoButton").onclick=undo;
+document.getElementById("undoButton").disabled=true;
+
 document.getElementById("larger").onclick=()=>{
-  if(selectedObject)selectedObject.scale.multiplyScalar(1.1);
-  else say("拡大するオブジェクトを選んでね。");
+  if(!selectedObject){say("先にオブジェクトを選んでね。");return;}
+  saveUndo();
+  selectedObject.scale.multiplyScalar(1.1);
+  say("拡大したよ。");
 };
 document.getElementById("smaller").onclick=()=>{
-  if(selectedObject)selectedObject.scale.multiplyScalar(0.9);
-  else say("縮小するオブジェクトを選んでね。");
+  if(!selectedObject){say("先にオブジェクトを選んでね。");return;}
+  saveUndo();
+  selectedObject.scale.multiplyScalar(0.9);
+  say("縮小したよ。");
 };
+
 document.getElementById("resetTransform").onclick=()=>{
   if(!selectedObject)return;
-  selectedObject.position.copy(selectedObject.userData.originalPosition);
-  selectedObject.scale.copy(selectedObject.userData.originalScale);
-  selectedObject.rotation.copy(selectedObject.userData.originalRotation);
-  const pos=selectedObject.geometry.attributes.position;
-  if(selectedObject.userData.originalVertices){
-    for(let i=0;i<pos.count;i++){
-      const v=selectedObject.userData.originalVertices[i];
-      pos.setXYZ(i,v.x,v.y,v.z);
+  saveUndo();
+  const m=selectedObject;
+  m.position.copy(m.userData.originalPosition);
+  m.scale.copy(m.userData.originalScale);
+  m.rotation.copy(m.userData.originalRotation);
+  const original=m.userData.originalVertices;
+  if(original){
+    const p=m.geometry.attributes.position;
+    if(p.count===original.length){
+      for(let i=0;i<p.count;i++)p.setXYZ(i,original[i].x,original[i].y,original[i].z);
+      updateGeometry();
+    }else{
+      say("メッシュ構造が変わっているため、頂点はリセットできなかったよ。位置と大きさは戻したよ。");
+      return;
     }
-    updateGeometry();
   }
-  say("オブジェクトの変形をリセットしたよ。");
+  say("変形をリセットしたよ。");
 };
 
 document.getElementById("applyColor").onclick=()=>{
-  if(!selectedObject)return;
+  if(!selectedObject){say("先にオブジェクトを選んでね。");return;}
+  saveUndo();
   selectedObject.material.color.set(document.getElementById("colorPicker").value);
   say("色を変更したよ。");
 };
 
 document.getElementById("deleteObject").onclick=()=>{
   if(!selectedObject)return;
+  saveUndo();
   scene.remove(selectedObject);
   selectedObject.geometry.dispose();
   selectedObject.material.dispose();
-  objects=objects.filter(o=>o!==selectedObject);
+  objects=objects.filter(m=>m!==selectedObject);
   selectedObject=null;
   selectedVertex=-1;selectedEdge=null;selectedFace=null;
   clearHelpers();updateObjectList();
-  say("オブジェクトを削除したよ。");
+  say("オブジェクトを削除したよ。取り消しボタンで戻せるよ。");
 };
 
 document.getElementById("clearSelection").onclick=()=>{
   selectedVertex=-1;selectedEdge=null;selectedFace=null;
-  drawHelpers();say("編集部分の選択を解除したよ。");
+  if(selectedObject)delete selectedObject.userData.faceVertices;
+  drawHelpers();
+  say("選択部分を解除したよ。");
 };
 
 document.getElementById("resetCamera").onclick=()=>{
   camera.position.set(4,3.2,6);
-  controls.target.set(0,1,0);
+  controls.target.set(0,0.8,0);
   controls.update();
   say("カメラをリセットしたよ。");
 };
 
-function saveOriginalVertices(mesh){
-  const pos=mesh.geometry.attributes.position;
-  mesh.userData.originalVertices=[];
-  for(let i=0;i<pos.count;i++){
-    mesh.userData.originalVertices.push(
-      new THREE.Vector3(pos.getX(i),pos.getY(i),pos.getZ(i))
-    );
-  }
-}
-
-// Keep the original vertex positions for the reset button.
-const originalAddObject=addObject;
-addObject=function(type){
-  originalAddObject(type);
-  if(selectedObject)saveOriginalVertices(selectedObject);
-};
-
 function resize(){
-  const w=viewport.clientWidth;
-  const h=viewport.clientHeight;
+  const w=viewport.clientWidth,h=viewport.clientHeight;
+  if(!w||!h)return;
   camera.aspect=w/h;
   camera.updateProjectionMatrix();
   renderer.setSize(w,h);
@@ -638,9 +826,9 @@ function animate(){
   renderer.render(scene,camera);
 }
 animate();
-
 addObject("箱");
-say("準備完了！頂点・辺・面モードを試してね。");
+setMode("face");
+say("準備完了！面を選んで押し出しや分割を試してね。");
 </script>
 </body>
 </html>

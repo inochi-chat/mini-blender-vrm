@@ -409,7 +409,7 @@ function createHuman(){
   const slim=type==="slim";
   const bigHead=type==="bighead";
 
-  const sx=slim?.82:1;
+  const sx = slim ? 0.82 : 1;
   const headScale=bigHead?1.3:1;
 
   // 既存オブジェクトを残し、Undoで一括復元できるようにする

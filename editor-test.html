@@ -143,6 +143,21 @@ input[type=number]{width:85px;min-height:40px;background:#171923;color:white;bor
     <button id="resetCamera">カメラを戻す</button>
     <div class="small">ドラッグで視点を回転、2本指で拡大縮小。</div>
   </section>
+  
+  <section class="section">
+    <div class="section-title">⑧ イラスト読み込み</div>
+    <input id="referenceImageInput" type="file" accept="image/*" hidden>
+    <div class="row">
+      <button id="loadReferenceImage">写真から読み込む</button>
+      <button id="toggleReferenceImage" disabled>画像を隠す</button>
+      <button id="removeReferenceImage" class="danger" disabled>画像を削除</button>
+    </div>
+    <div class="small">
+      iPhoneの写真から参考イラストを読み込めるよ。
+      画像は3D画面に表示され、モデル作成の参考にできるよ。
+    </div>
+  </section>
+
 </div>
 
 <script type="module">
@@ -812,6 +827,133 @@ document.getElementById("resetCamera").onclick=()=>{
 };
 
 function resize(){
+  
+let referenceSprite = null;
+let referenceTexture = null;
+let referenceObjectURL = null;
+let referenceVisible = true;
+
+const referenceInput =
+  document.getElementById("referenceImageInput");
+const loadReferenceButton =
+  document.getElementById("loadReferenceImage");
+const toggleReferenceButton =
+  document.getElementById("toggleReferenceImage");
+const removeReferenceButton =
+  document.getElementById("removeReferenceImage");
+
+loadReferenceButton.onclick = () => {
+  referenceInput.click();
+};
+
+referenceInput.addEventListener("change", event => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    say("画像ファイルを選んでね。");
+    return;
+  }
+
+  if (referenceObjectURL) {
+    URL.revokeObjectURL(referenceObjectURL);
+  }
+
+  referenceObjectURL = URL.createObjectURL(file);
+
+  const loader = new THREE.TextureLoader();
+
+  loader.load(
+    referenceObjectURL,
+    texture => {
+      if (referenceTexture) {
+        referenceTexture.dispose();
+      }
+
+      if (referenceSprite) {
+        scene.remove(referenceSprite);
+        referenceSprite.material.dispose();
+      }
+
+      referenceTexture = texture;
+      referenceTexture.colorSpace = THREE.SRGBColorSpace;
+
+      const image = texture.image;
+      const aspect = image.width / image.height;
+      const height = 3.2;
+      const width = height * aspect;
+
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: true,
+        depthWrite: false
+      });
+
+      referenceSprite = new THREE.Sprite(material);
+      referenceSprite.scale.set(width, height, 1);
+      referenceSprite.position.set(0, 1.6, -1.5);
+      referenceSprite.renderOrder = 1;
+
+      scene.add(referenceSprite);
+
+      referenceVisible = true;
+      referenceSprite.visible = true;
+
+      toggleReferenceButton.disabled = false;
+      toggleReferenceButton.textContent = "画像を隠す";
+      removeReferenceButton.disabled = false;
+
+      say("参考イラストを読み込んだよ。");
+    },
+    undefined,
+    error => {
+      console.error(error);
+      say("画像を読み込めなかったよ。別の画像で試してね。");
+    }
+  );
+});
+
+toggleReferenceButton.onclick = () => {
+  if (!referenceSprite) return;
+
+  referenceVisible = !referenceVisible;
+  referenceSprite.visible = referenceVisible;
+
+  toggleReferenceButton.textContent =
+    referenceVisible ? "画像を隠す" : "画像を表示";
+
+  say(referenceVisible
+    ? "参考画像を表示したよ。"
+    : "参考画像を隠したよ。");
+};
+
+removeReferenceButton.onclick = () => {
+  if (referenceSprite) {
+    scene.remove(referenceSprite);
+    referenceSprite.material.dispose();
+    referenceSprite = null;
+  }
+
+  if (referenceTexture) {
+    referenceTexture.dispose();
+    referenceTexture = null;
+  }
+
+  if (referenceObjectURL) {
+    URL.revokeObjectURL(referenceObjectURL);
+    referenceObjectURL = null;
+  }
+
+  referenceInput.value = "";
+  toggleReferenceButton.disabled = true;
+  removeReferenceButton.disabled = true;
+  toggleReferenceButton.textContent = "画像を隠す";
+  referenceVisible = true;
+
+  say("参考画像を削除したよ。");
+};
+
   const w=viewport.clientWidth,h=viewport.clientHeight;
   if(!w||!h)return;
   camera.aspect=w/h;

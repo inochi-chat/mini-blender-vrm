@@ -1,1 +1,1 @@
-# mini-blender-vrm
+# mini-live2d-studio

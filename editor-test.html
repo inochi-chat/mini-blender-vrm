@@ -5,682 +5,536 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#171923">
-<title>Mini Blender Character Studio</title>
+<title>My Character Studio</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#171923;color:#f4f5fb;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#171923;color:#eee;font-family:system-ui,sans-serif}
 button,input,select{font:inherit}
-button{min-height:40px;padding:7px;border:1px solid #41485d;border-radius:9px;background:#2b3042;color:#f4f5fb;touch-action:manipulation}
+button{background:#303544;color:#fff;border:1px solid #454d60;border-radius:8px;padding:9px 10px;cursor:pointer}
+button:active{background:#52658a}
 button:disabled{opacity:.4}
-button.active{background:#7c9cff;color:#101426}
-button.primary{background:#344b87;border-color:#617fce}
-button.danger{background:#592b38}
-header{padding:8px 11px;background:#202332;border-bottom:1px solid #41485d}
-.headerrow,.row{display:flex;gap:7px;align-items:stretch}
-.headerrow{justify-content:space-between;align-items:center}
-h1{font-size:16px;margin:0}
-#status{font-size:12px;color:#b8d0ff;margin-top:5px;min-height:16px}
-#workspace{height:calc(100% - 59px);display:flex;flex-direction:column;min-height:0}
-#viewport{position:relative;flex:1 1 48%;min-height:170px;overflow:hidden;background:#1b1e2b;touch-action:none}
-#viewport canvas{display:block;width:100%;height:100%;touch-action:none}
-#viewHint{position:absolute;bottom:7px;left:7px;padding:5px 7px;background:#121522bb;border-radius:7px;font-size:11px;pointer-events:none}
-#panel{height:49%;min-height:190px;overflow-y:auto;overscroll-behavior:contain;padding:9px;padding-bottom:max(18px,env(safe-area-inset-bottom));border-top:1px solid #41485d;-webkit-overflow-scrolling:touch}
-.section{padding:9px;margin-bottom:9px;border:1px solid #41485d;border-radius:11px;background:#222533}
-.section-title{font-size:13px;font-weight:700;margin-bottom:7px}
-.row{margin-top:7px}
-.row>button{flex:1;min-width:0}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.small{font-size:11px;color:#b8bfd1;line-height:1.5;margin-top:6px}
-select{flex:1;min-width:0;background:#2b3042;color:white;border:1px solid #41485d;border-radius:9px;padding:8px}
-input[type=color]{width:100%;height:40px;border:1px solid #41485d;border-radius:8px;background:#2b3042;padding:3px;min-width:0}
-input[type=file]{display:none}
-#objectList{display:flex;flex-direction:column;gap:5px}
-.object-item{display:flex;gap:6px}
-.object-item button{flex:1;text-align:left;overflow-wrap:anywhere}
-.object-item .mini-delete{flex:0 0 48px;text-align:center}
-.object-item .selected{border-color:#7c9cff;background:#35456f}
-@media(orientation:landscape){
- #workspace{height:calc(100% - 59px);flex-direction:row}
- #viewport{flex:1 1 62%;height:100%;min-height:0}
- #panel{flex:0 0 38%;height:100%;min-height:0;border-top:0;border-left:1px solid #41485d}
+input,select{background:#202431;color:#fff;border:1px solid #454d60;border-radius:7px;padding:7px;min-width:0}
+#app{height:100dvh;display:flex;flex-direction:column}
+header{height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#202431;border-bottom:1px solid #353b4b;font-weight:700}
+#status{font-size:11px;color:#aeb8cc;font-weight:400}
+#workspace{position:relative;flex:1;min-height:100px;overflow:hidden}
+#view{width:100%;height:100%;display:block;touch-action:none}
+#hint{position:absolute;left:10px;top:10px;background:#171923bb;padding:7px 9px;border-radius:7px;font-size:11px;color:#d2d7e3;pointer-events:none}
+#panel{flex-shrink:0;max-height:48%;overflow:auto;background:#202431;border-top:1px solid #3b4253;padding:10px;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.section{border:1px solid #3b4253;border-radius:10px;padding:9px;margin-bottom:9px}
+h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:7px}
+.row:last-child{margin-bottom:0}
+.row button{flex:1}
+.field{display:flex;align-items:center;gap:5px;flex:1;min-width:75px;font-size:11px;color:#bdc6d8}
+.field span{width:15px;flex-shrink:0}
+.field input{width:100%}
+#objectList{display:flex;flex-wrap:wrap;gap:5px;max-height:90px;overflow:auto}
+.objectItem{font-size:12px;padding:6px 8px}
+.objectItem.active{background:#4264a5;border-color:#91b5ff}
+.small{font-size:11px;color:#aeb8cc;line-height:1.5}
+.danger{background:#58333c}
+#colorInput{width:42px;height:34px;padding:2px}
+#fileInput{display:none}
+@media(min-width:700px){
+ #app{flex-direction:row;flex-wrap:wrap}
+ header{width:100%}
+ #workspace{height:calc(100% - 46px);flex:1}
+ #panel{width:340px;max-height:calc(100% - 46px);height:calc(100% - 46px);border-top:0;border-left:1px solid #3b4253}
 }
 </style>
-<script type="importmap">
-{"imports":{
-"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-"three/addons/controls/OrbitControls.js":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js"
-}}
-</script>
 </head>
 <body>
+<div id="app">
 <header>
- <div class="headerrow">
-  <h1>Mini Blender Character Studio</h1>
-  <button id="undoButton" disabled>↶ 元に戻す</button>
- </div>
- <div id="status">準備中...</div>
+ <span>My Character Studio</span>
+ <span id="status">準備完了</span>
 </header>
+
 <main id="workspace">
- <div id="viewport">
-  <div id="viewHint">ドラッグ：回転 ／ 2本指：ズーム・移動</div>
- </div>
- <div id="panel">
-  <section class="section">
-   <div class="section-title">① 人体を作成</div>
-   <div class="row">
-    <select id="bodyType">
-     <option value="normal">標準体型</option>
-     <option value="slim">細身</option>
-     <option value="bighead">頭大きめ</option>
-    </select>
-    <input id="skinColor" type="color" value="#e8b99d" aria-label="肌色">
-   </div>
-   <div class="row">
-    <input id="clothesColor" type="color" value="#657dcc" aria-label="服の色">
-    <input id="pantsColor" type="color" value="#34394f" aria-label="ズボンの色">
-   </div>
-   <div class="row"><button id="createHuman" class="primary">人体を作成</button></div>
-   <div class="small">人体は複数パーツで構成されるよ。ボーンを回転させると、つながったパーツも動くよ。</div>
-  </section>
-
-  <section class="section">
-   <div class="section-title">② 骨格・関節</div>
-   <div class="row">
-    <select id="jointSelect" aria-label="操作する関節">
-     <option value="neck">首</option>
-     <option value="spine">上半身</option>
-     <option value="head">頭</option>
-     <option value="shoulderL">左肩</option>
-     <option value="elbowL">左肘</option>
-     <option value="wristL">左手首</option>
-     <option value="shoulderR">右肩</option>
-     <option value="elbowR">右肘</option>
-     <option value="wristR">右手首</option>
-     <option value="hipL">左股関節</option>
-     <option value="kneeL">左膝</option>
-     <option value="ankleL">左足首</option>
-     <option value="hipR">右股関節</option>
-     <option value="kneeR">右膝</option>
-     <option value="ankleR">右足首</option>
-    </select>
-    <select id="jointAxis" aria-label="関節の回転軸">
-     <option value="z">Z軸</option>
-     <option value="x">X軸</option>
-     <option value="y">Y軸</option>
-    </select>
-   </div>
-   <div class="row">
-    <button id="jointMinus">− 回転</button>
-    <button id="jointPlus">＋ 回転</button>
-    <button id="jointReset">関節リセット</button>
-   </div>
-   <div class="row">
-    <button id="toggleBones" class="active">骨格表示 ON</button>
-    <button id="resetPose">全関節リセット</button>
-   </div>
-   <div class="small">ボーン表示は関節のつながりを示すガイドだよ。現在はパーツ単位の回転で、一体型メッシュのスキニングはまだ実装していないよ。</div>
-  </section>
-
-  <section class="section">
-   <div class="section-title">③ オブジェクト追加</div>
-   <div class="row">
-    <button id="addBox">＋ 箱</button>
-    <button id="addSphere">＋ 球</button>
-    <button id="addCylinder">＋ 円柱</button>
-   </div>
-  </section>
-
-  <section class="section">
-   <div class="section-title">④ 編集モード</div>
-   <div class="grid">
-    <button data-mode="object" class="active">オブジェクト</button>
-    <button data-mode="vertex">頂点</button>
-    <button data-mode="edge">辺</button>
-    <button data-mode="face">面</button>
-   </div>
-   <div class="small">オブジェクト選択と基本操作に対応。頂点・辺・面モードは選択表示用で、頂点の直接変形は次の実装段階だよ。</div>
-  </section>
-
-  <section class="section">
-   <div class="section-title">⑤ 移動・拡大縮小</div>
-   <div class="row"><button id="moveXMinus">X −</button><button id="moveXPlus">X ＋</button></div>
-   <div class="row"><button id="moveYMinus">Y −</button><button id="moveYPlus">Y ＋</button></div>
-   <div class="row"><button id="moveZMinus">Z −</button><button id="moveZPlus">Z ＋</button></div>
-   <div class="row"><button id="scaleDown">縮小</button><button id="scaleUp">拡大</button></div>
-  </section>
-
-  <section class="section">
-   <div class="section-title">⑥ オブジェクト回転</div>
-   <div class="row">
-    <select id="rotationAngle"><option value="15">15°</option><option value="45" selected>45°</option><option value="90">90°</option></select>
-    <button id="resetRotation">回転リセット</button>
-   </div>
-   <div class="row"><button id="rotXMinus">X − 回転</button><button id="rotXPlus">X ＋ 回転</button></div>
-   <div class="row"><button id="rotYMinus">Y − 回転</button><button id="rotYPlus">Y ＋ 回転</button></div>
-   <div class="row"><button id="rotZMinus">Z − 回転</button><button id="rotZPlus">Z ＋ 回転</button></div>
-  </section>
-
-  <section class="section">
-   <div class="section-title">⑦ 色・削除・リセット</div>
-   <div class="row"><input id="colorInput" type="color" value="#7c9cff"><button id="applyColor">色を適用</button><button id="deleteObject" class="danger">削除</button></div>
-   <div class="row"><button id="resetTransform">変形リセット</button><button id="resetCamera">カメラリセット</button></div>
-  </section>
-
-  <section class="section">
-   <div class="section-title">⑧ オブジェクト一覧</div>
-   <div id="objectList"></div>
-  </section>
-
-  <section class="section">
-   <div class="section-title">⑨ 参考イラスト</div>
-   <input id="referenceImageInput" type="file" accept="image/*">
-   <div class="row"><button id="loadReferenceImage" class="primary">写真から読み込む</button><button id="toggleReferenceImage" disabled>画像を隠す</button></div>
-   <div class="row"><button id="removeReferenceImage" class="danger" disabled>画像を削除</button></div>
-  </section>
- </div>
+ <canvas id="view"></canvas>
+ <div id="hint">空の作業スペース<br>ドラッグ：視点移動 ／ ピンチ：拡大縮小<br>パーツを追加してキャラクターを作ろう</div>
 </main>
 
+<section id="panel">
+ <div class="section">
+  <h3>① パーツを追加</h3>
+  <div class="row">
+   <button data-add="sphere">● 球</button>
+   <button data-add="box">■ 箱</button>
+   <button data-add="cylinder">▰ 円柱</button>
+  </div>
+  <div class="row">
+   <button data-add="cone">▲ 円錐</button>
+   <button data-add="torus">◎ 輪</button>
+   <button id="duplicate">複製</button>
+  </div>
+  <div class="small">追加したパーツは自由に移動・回転・拡大縮小できるよ。</div>
+ </div>
+
+ <div class="section">
+  <h3>② パーツ一覧</h3>
+  <div id="objectList" class="small">まだパーツがありません</div>
+  <div class="row" style="margin-top:8px">
+   <button id="undo">↶ 取り消し</button>
+   <button id="delete" class="danger">削除</button>
+   <button id="clear">全消去</button>
+  </div>
+ </div>
+
+ <div class="section">
+  <h3>③ 選択パーツの位置</h3>
+  <div class="row">
+   <label class="field"><span>X</span><input id="px" type="number" step="0.1" value="0"></label>
+   <label class="field"><span>Y</span><input id="py" type="number" step="0.1" value="0"></label>
+   <label class="field"><span>Z</span><input id="pz" type="number" step="0.1" value="0"></label>
+  </div>
+  <h3>回転（度）</h3>
+  <div class="row">
+   <label class="field"><span>X</span><input id="rx" type="number" step="5" value="0"></label>
+   <label class="field"><span>Y</span><input id="ry" type="number" step="5" value="0"></label>
+   <label class="field"><span>Z</span><input id="rz" type="number" step="5" value="0"></label>
+  </div>
+  <h3>大きさ</h3>
+  <div class="row">
+   <label class="field"><span>X</span><input id="sx" type="number" min="0.05" step="0.1" value="1"></label>
+   <label class="field"><span>Y</span><input id="sy" type="number" min="0.05" step="0.1" value="1"></label>
+   <label class="field"><span>Z</span><input id="sz" type="number" min="0.05" step="0.1" value="1"></label>
+  </div>
+  <div class="row">
+   <label class="field" style="flex:0 0 auto">色</label>
+   <input id="colorInput" type="color" value="#7c91d9">
+   <button id="applyColor">色を適用</button>
+  </div>
+ </div>
+
+ <div class="section">
+  <h3>④ 参考画像</h3>
+  <div class="row">
+   <button id="loadImage">画像を読み込む</button>
+   <button id="toggleImage">表示切替</button>
+   <button id="removeImage" class="danger">画像を削除</button>
+   <input id="fileInput" type="file" accept="image/*">
+  </div>
+  <div class="small">正面の参考画像を作業空間の奥に表示するよ。</div>
+ </div>
+
+ <div class="section">
+  <h3>⑤ 表示設定</h3>
+  <div class="row">
+   <button id="front">正面</button>
+   <button id="side">横</button>
+   <button id="resetView">視点リセット</button>
+  </div>
+  <div class="row">
+   <button id="gridToggle">床グリッド切替</button>
+  </div>
+  <div class="small">この版ではパーツの組み立て・基本編集・取り消しを実装。関節の親子付けや滑らかなスキニングはまだ未実装だよ。</div>
+ </div>
+</section>
+</div>
+
 <script type="module">
-import * as THREE from "three";
-import {OrbitControls} from "three/addons/controls/OrbitControls.js";
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js';
 
-const $=id=>document.getElementById(id);
-const viewport=$("viewport");
-const statusEl=$("status");
-const objectList=$("objectList");
-const say=s=>statusEl.textContent=s;
+const $ = id => document.getElementById(id);
+const canvas = $('view');
 
-const scene=new THREE.Scene();
-scene.background=new THREE.Color("#1b1e2b");
-const camera=new THREE.PerspectiveCamera(45,1,.1,1000);
-camera.position.set(6,5,9);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#171923');
 
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.7));
-renderer.outputColorSpace=THREE.SRGBColorSpace;
-viewport.prepend(renderer.domElement);
+const camera = new THREE.PerspectiveCamera(45,1,0.01,1000);
+camera.position.set(5,4,7);
 
-const controls=new OrbitControls(camera,renderer.domElement);
-controls.enableDamping=true;
-controls.dampingFactor=.08;
-controls.target.set(0,2,0);
+const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-scene.add(new THREE.HemisphereLight(0xffffff,0x62647a,2));
-const light=new THREE.DirectionalLight(0xffffff,2.2);
-light.position.set(5,9,7);
+const controls = new OrbitControls(camera,renderer.domElement);
+controls.enableDamping = true;
+controls.target.set(0,1,0);
+controls.minDistance = 1;
+controls.maxDistance = 50;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x55566b,2));
+
+const light = new THREE.DirectionalLight(0xffffff,2.3);
+light.position.set(4,8,6);
+light.castShadow = true;
 scene.add(light);
-scene.add(new THREE.GridHelper(20,20,0x77809b,0x41485d));
-scene.add(new THREE.AxesHelper(2));
 
-const objectRoot=new THREE.Group();
-scene.add(objectRoot);
-const rigRoot=new THREE.Group();
-scene.add(rigRoot);
-const boneGuide=new THREE.Group();
-scene.add(boneGuide);
+const grid = new THREE.GridHelper(20,20,0x59657e,0x303746);
+scene.add(grid);
+
+const floor = new THREE.Mesh(
+ new THREE.PlaneGeometry(200,200),
+ new THREE.MeshStandardMaterial({color:0x202431,roughness:1})
+);
+floor.rotation.x=-Math.PI/2;
+floor.position.y=-0.015;
+floor.receiveShadow=true;
+scene.add(floor);
+
+const axes = new THREE.AxesHelper(1.5);
+scene.add(axes);
 
 let objects=[];
-let selectedObject=null;
-let mode="object";
-let nextNumber=1;
-let rig=null;
-let jointMap={};
-let boneLines=[];
-let bonesVisible=true;
-const history=[];
-const MAX_HISTORY=15;
-
-function material(color){
- return new THREE.MeshStandardMaterial({color,roughness:.72,metalness:.01});
-}
-function addMesh(name,geometry,color,parent,position=[0,0,0]){
- const mesh=new THREE.Mesh(geometry,material(color));
- mesh.name=name;
- mesh.position.set(...position);
- mesh.castShadow=false;
- mesh.receiveShadow=false;
- parent.add(mesh);
- objects.push(mesh);
- return mesh;
-}
-function ovalGeometry(x,y,z){
- const g=new THREE.SphereGeometry(1,24,16);
- g.scale(x,y,z);
- return g;
-}
-function capsuleGeometry(radius,length){
- return new THREE.CapsuleGeometry(radius,length,5,12);
-}
-function capsulePart(name,color,parent,length,radius,position=[0,0,0]){
- return addMesh(name,capsuleGeometry(radius,length),color,parent,position);
-}
-function makeBone(name,parent,position){
- const b=new THREE.Bone();
- b.name=name;
- b.position.set(...position);
- parent.add(b);
- jointMap[name]=b;
- return b;
-}
-function makeLimbSegment(name,color,bone,length,radius){
- return capsulePart(name,color,bone,length,radius,[0,-length/2,0]);
-}
-function addFinger(name,color,parent,x,y,z,length,radius){
- const f=capsulePart(name,color,parent,length,radius,[x,y,z]);
- f.rotation.z=-.12;
- return f;
-}
-
-function disposeObject(mesh){
- if(mesh.geometry)mesh.geometry.dispose();
- if(mesh.material){
-  if(Array.isArray(mesh.material))mesh.material.forEach(m=>m.dispose());
-  else mesh.material.dispose();
- }
-}
-function clearHuman(){
- if(rigRoot.children.length){
-  rigRoot.traverse(o=>{
-   if(o.isMesh)disposeObject(o);
-  });
-  rigRoot.clear();
- }
- objects=objects.filter(o=>!rigRootContains(o));
- selectedObject=null;
- rig=null;
- jointMap={};
- boneGuide.clear();
- boneLines=[];
- updateObjectList();
-}
-function rigRootContains(obj){
- let p=obj;
- while(p){
-  if(p===rigRoot)return true;
-  p=p.parent;
- }
- return false;
-}
-function clearModel(){
- for(const obj of [...objects]){
-  obj.parent?.remove(obj);
-  disposeObject(obj);
- }
- objects=[];
- selectedObject=null;
- clearHuman();
- updateObjectList();
-}
-function createHuman(){
- clearModel();
- const type=$("bodyType").value;
- const skin=$("skinColor").value;
- const clothes=$("clothesColor").value;
- const pants=$("pantsColor").value;
- const slim=type==="slim";
- const big=type==="bighead";
- const sx = slim ? 0.82 : 1;
- const hs=big?1.22:1;
- const root=makeBone("root",rigRoot,[0,1.78,0]);
- rig=root;
-
- // 胴体。胸と骨盤はルートに取り付ける。
- addMesh("人体・胸と胴体",ovalGeometry(.48*sx,.77,.29),clothes,root,[0,.73,0]);
- addMesh("人体・骨盤",ovalGeometry(.43*sx,.30,.30),pants,[root][0],[0,.12,0]);
- addMesh("人体・腰",ovalGeometry(.34*sx,.28,.25),clothes,root,[0,.25,0]);
-
- // 背骨・首・頭
- const spine=makeBone("spine",root,[0,1.05,0]);
- const neck=makeBone("neck",spine,[0,.35,0]);
- capsulePart("人体・首",skin,neck,.18,.12,[0,.04,0]);
- const head=makeBone("head",neck,[0,.20,0]);
- addMesh("人体・頭",ovalGeometry(.36*hs,.48*hs,.32*hs),skin,head,[0,.32*hs,0]);
- addMesh("人体・左耳",ovalGeometry(.085*hs,.13*hs,.075*hs),skin,head,[-.35*hs,.31*hs,0]);
- addMesh("人体・右耳",ovalGeometry(.085*hs,.13*hs,.075*hs),skin,head,[.35*hs,.31*hs,0]);
-
- // 顔は前方 +Z
- for(const s of [-1,1]){
-  const side=s<0?"左":"右";
-  addMesh("顔・"+side+"白目",ovalGeometry(.088*hs,.11*hs,.035), "#fff8f0",head,[s*.13*hs,.32*hs,.285*hs]);
-  addMesh("顔・"+side+"虹彩",ovalGeometry(.050*hs,.071*hs,.025),"#527db8",head,[s*.13*hs,.32*hs,.316*hs]);
-  addMesh("顔・"+side+"瞳",ovalGeometry(.025*hs,.045*hs,.013),"#202438",head,[s*.13*hs,.32*hs,.337*hs]);
-  addMesh("顔・"+side+"ハイライト",ovalGeometry(.018*hs,.022*hs,.01),"#ffffff",head,[s*.13*hs-.015,.35*hs,.35*hs]);
-  const brow=capsulePart("顔・"+side+"眉","#60473e",head,.075,.018,[s*.13*hs,.45*hs,.29*hs]);
-  brow.rotation.z=s*.12;
- }
- addMesh("顔・鼻",ovalGeometry(.035,.052,.04),"#dba28b",head,[0,.22*hs,.335*hs]);
- addMesh("顔・口",ovalGeometry(.07,.018,.012),"#a95761",head,[0,.115*hs,.323*hs]);
-
- // 肩から手首まで。腕の各パーツは親子ボーンにつながる。
- for(const s of [-1,1]){
-  const side=s<0?"左":"右";
-  const shoulder=makeBone(s<0?"shoulderL":"shoulderR",spine,[s*.47*sx,.23,0]);
-  addMesh("人体・"+side+"肩",ovalGeometry(.20,.20,.21),clothes,shoulder,[0,-.03,0]);
-  const elbow=makeBone(s<0?"elbowL":"elbowR",shoulder,[s*.02,-.40,0]);
-  makeLimbSegment("人体・"+side+"上腕",skin,shoulder,.40,.115);
-  addMesh("人体・"+side+"肘",ovalGeometry(.105,.11,.11),skin,elbow,[0,0,0]);
-  const wrist=makeBone(s<0?"wristL":"wristR",elbow,[0,-.34,0]);
-  makeLimbSegment("人体・"+side+"前腕",skin,elbow,.34,.09);
-  addMesh("人体・"+side+"手のひら",ovalGeometry(.095,.12,.055),skin,wrist,[0,-.08,.015]);
-  for(let i=0;i<4;i++){
-   addFinger("人体・"+side+"指"+(i+1),skin,wrist,(i-1.5)*.043,-.18,.02,.09,.018);
-  }
-  const thumb=capsulePart("人体・"+side+"親指",skin,wrist,.08,.021,[s*.105,-.095,.035]);
-  thumb.rotation.z=s*.55;
- }
-
- // 股関節から足首。各脚は股関節の子として動く。
- for(const s of [-1,1]){
-  const side=s<0?"左":"右";
-  const hip=makeBone(s<0?"hipL":"hipR",root,[s*.22,-.04,0]);
-  addMesh("人体・"+side+"股関節",ovalGeometry(.16,.18,.17),pants,hip,[0,-.04,0]);
-  makeLimbSegment("人体・"+side+"太もも",pants,hip,.63,.155*sx);
-  const knee=makeBone(s<0?"kneeL":"kneeR",hip,[0,-.63,0]);
-  addMesh("人体・"+side+"膝",ovalGeometry(.135,.14,.14),pants,knee,[0,0,0]);
-  makeLimbSegment("人体・"+side+"すね",pants,knee,.60,.105*sx);
-  const ankle=makeBone(s<0?"ankleL":"ankleR",knee,[0,-.60,0]);
-  capsulePart("人体・"+side+"足首",skin,ankle,.13,.075,[0,-.07,0]);
-  addMesh("人体・"+side+"足",ovalGeometry(.14,.085,.27),pants,ankle,[0,-.12,.14]);
- }
-
- buildBoneGuide();
- updateObjectList();
- selectedObject=objects.find(o=>o.name==="人体・胸と胴体")||objects[0]||null;
- updateObjectList();
- controls.target.set(0,2.2,0);
- camera.position.set(5,4.5,8);
- controls.update();
- say("人体と関節リグを作成したよ。関節を選んで回転してみてね。");
-}
-
-function buildBoneGuide(){
- boneGuide.clear();
- boneLines=[];
- if(!rig)return;
- const pairs=[
-  ["root","spine"],["spine","neck"],["neck","head"],
-  ["spine","shoulderL"],["shoulderL","elbowL"],["elbowL","wristL"],
-  ["spine","shoulderR"],["shoulderR","elbowR"],["elbowR","wristR"],
-  ["root","hipL"],["hipL","kneeL"],["kneeL","ankleL"],
-  ["root","hipR"],["hipR","kneeR"],["kneeR","ankleR"]
- ];
- for(const [a,b] of pairs){
-  const geom=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
-  const line=new THREE.Line(geom,new THREE.LineBasicMaterial({color:0x70d6ff,depthTest:false}));
-  line.renderOrder=1000;
-  boneGuide.add(line);
-  boneLines.push({line,a,b});
- }
- for(const name of Object.keys(jointMap)){
-  const dot=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),new THREE.MeshBasicMaterial({color:0xffd54a,depthTest:false}));
-  dot.name="joint-dot:"+name;
-  dot.renderOrder=1001;
-  boneGuide.add(dot);
- }
- boneGuide.visible=bonesVisible;
- updateBoneGuide();
-}
-function updateBoneGuide(){
- if(!rig)return;
- rigRoot.updateMatrixWorld(true);
- for(const item of boneLines){
-  const a=jointMap[item.a],b=jointMap[item.b];
-  if(!a||!b)continue;
-  const p1=a.getWorldPosition(new THREE.Vector3());
-  const p2=b.getWorldPosition(new THREE.Vector3());
-  item.line.geometry.setFromPoints([p1,p2]);
- }
- for(const dot of boneGuide.children){
-  if(!dot.name.startsWith("joint-dot:"))continue;
-  const name=dot.name.slice(10);
-  const joint=jointMap[name];
-  if(joint)dot.position.copy(joint.getWorldPosition(new THREE.Vector3()));
- }
-}
-
-$("createHuman").addEventListener("click",()=>{
- try{createHuman();}
- catch(e){console.error(e);say("人体作成エラー："+e.message);}
-});
-$("toggleBones").addEventListener("click",()=>{
- bonesVisible=!bonesVisible;
- boneGuide.visible=bonesVisible;
- $("toggleBones").textContent="骨格表示 "+(bonesVisible?"ON":"OFF");
- $("toggleBones").classList.toggle("active",bonesVisible);
-});
-
-function jointAction(direction){
- const name=$("jointSelect").value;
- const axis=$("jointAxis").value;
- const joint=jointMap[name];
- if(!joint){say("先に人体を作成してね。");return;}
- saveHistory();
- const amount=THREE.MathUtils.degToRad(Number($("rotationAngle").value))*direction;
- joint.rotation[axis]+=amount;
- updateBoneGuide();
- say(name+"を"+axis.toUpperCase()+"軸に回転したよ。");
-}
-$("jointMinus").addEventListener("click",()=>jointAction(-1));
-$("jointPlus").addEventListener("click",()=>jointAction(1));
-$("jointReset").addEventListener("click",()=>{
- const joint=jointMap[$("jointSelect").value];
- if(!joint){say("先に人体を作成してね。");return;}
- saveHistory();joint.rotation.set(0,0,0);updateBoneGuide();say("選択関節をリセットしたよ。");
-});
-$("resetPose").addEventListener("click",()=>{
- if(!rig){say("先に人体を作成してね。");return;}
- saveHistory();
- Object.values(jointMap).forEach(j=>j.rotation.set(0,0,0));
- updateBoneGuide();say("全関節をリセットしたよ。");
-});
-
-/* 参考画像 */
-let referenceSprite=null,referenceTexture=null,referenceURL=null,loadToken=0;
-$("loadReferenceImage").addEventListener("click",()=>$("referenceImageInput").click());
-function removeReference(){
- if(referenceSprite){
-  scene.remove(referenceSprite);
-  referenceSprite.material.dispose();
-  referenceSprite=null;
- }
- if(referenceTexture){referenceTexture.dispose();referenceTexture=null;}
- if(referenceURL){URL.revokeObjectURL(referenceURL);referenceURL=null;}
-}
-$("referenceImageInput").addEventListener("change",e=>{
- const file=e.target.files?.[0];if(!file)return;
- if(!file.type.startsWith("image/")){say("画像ファイルを選んでね。");return;}
- const token=++loadToken;
- removeReference();
- const url=URL.createObjectURL(file);referenceURL=url;
- new THREE.TextureLoader().load(url,texture=>{
-  if(token!==loadToken){texture.dispose();return;}
-  referenceTexture=texture;texture.colorSpace=THREE.SRGBColorSpace;
-  const aspect=texture.image.width/texture.image.height;
-  const h=3.8,w=Math.min(8,Math.max(.1,h*aspect));
-  referenceSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,opacity:.7,depthTest:false,depthWrite:false,toneMapped:false}));
-  referenceSprite.scale.set(w,h,1);
-  referenceSprite.position.set(0,2,-1.5);
-  referenceSprite.renderOrder=900;
-  scene.add(referenceSprite);
-  $("toggleReferenceImage").disabled=false;
-  $("removeReferenceImage").disabled=false;
-  $("toggleReferenceImage").textContent="画像を隠す";
-  say("参考画像を読み込んだよ。");
- },undefined,err=>{console.error(err);say("画像を読み込めなかったよ。");});
-});
-$("toggleReferenceImage").addEventListener("click",()=>{
- if(!referenceSprite)return;
- referenceSprite.visible=!referenceSprite.visible;
- $("toggleReferenceImage").textContent=referenceSprite.visible?"画像を隠す":"画像を表示";
-});
-$("removeReferenceImage").addEventListener("click",()=>{
- loadToken++;removeReference();
- $("referenceImageInput").value="";
- $("toggleReferenceImage").disabled=true;
- $("removeReferenceImage").disabled=true;
- say("参考画像を削除したよ。");
-});
-
-/* プリミティブ */
-function addPrimitive(type){
- saveHistory();
- let geometry,label;
- if(type==="box"){geometry=new THREE.BoxGeometry(1,1,1);label="箱";}
- else if(type==="sphere"){geometry=new THREE.SphereGeometry(.55,20,14);label="球";}
- else{geometry=new THREE.CylinderGeometry(.4,.4,1.2,16);label="円柱";}
- const mesh=addMesh(label+" "+nextNumber++,geometry,$("colorInput").value,objectRoot,[(objects.length%3)*1.4,.8,Math.floor(objects.length/3)*1.4]);
- selectObject(mesh);say(mesh.name+"を追加したよ。");
-}
-$("addBox").addEventListener("click",()=>addPrimitive("box"));
-$("addSphere").addEventListener("click",()=>addPrimitive("sphere"));
-$("addCylinder").addEventListener("click",()=>addPrimitive("cylinder"));
-
-/* オブジェクト一覧と選択 */
-function selectObject(mesh){
- if(!mesh||!objects.includes(mesh))return;
- selectedObject=mesh;updateObjectList();say(mesh.name+"を選択したよ。");
-}
-function updateObjectList(){
- objectList.replaceChildren();
- for(const mesh of objects){
-  const row=document.createElement("div");row.className="object-item";
-  const choose=document.createElement("button");
-  choose.textContent=mesh.name;
-  if(mesh===selectedObject)choose.classList.add("selected");
-  choose.addEventListener("click",()=>selectObject(mesh));
-  const del=document.createElement("button");
-  del.textContent="削除";del.className="mini-delete danger";
-  del.addEventListener("click",()=>deleteObject(mesh));
-  row.append(choose,del);objectList.append(row);
- }
-}
-document.querySelectorAll("[data-mode]").forEach(btn=>btn.addEventListener("click",()=>{
- mode=btn.dataset.mode;
- document.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b===btn));
- say("編集モード："+mode);
-}));
+let selected=null;
+let nextId=1;
+let history=[];
+let referencePlane=null;
+let referenceTexture=null;
+let referenceVisible=true;
 
 const raycaster=new THREE.Raycaster();
 const pointer=new THREE.Vector2();
-renderer.domElement.addEventListener("pointerdown",e=>{
- renderer.domElement.dataset.downX=String(e.clientX);
- renderer.domElement.dataset.downY=String(e.clientY);
-});
-renderer.domElement.addEventListener("click",e=>{
- const rect=renderer.domElement.getBoundingClientRect();
- pointer.x=((e.clientX-rect.left)/rect.width)*2-1;
- pointer.y=-((e.clientY-rect.top)/rect.height)*2+1;
- raycaster.setFromCamera(pointer,camera);
- const hits=raycaster.intersectObjects(objects,false);
- if(hits.length)selectObject(hits[0].object);
-});
 
-/* Undo: モデル全体の履歴ではなく、現存オブジェクトと関節の変形を記録 */
-function snapshot(){
+function say(message){
+ $('status').textContent=message;
+}
+
+function makeGeometry(type){
+ switch(type){
+  case 'sphere': return new THREE.SphereGeometry(0.5,24,16);
+  case 'box': return new THREE.BoxGeometry(1,1,1);
+  case 'cylinder': return new THREE.CylinderGeometry(0.5,0.5,1,24);
+  case 'cone': return new THREE.ConeGeometry(0.5,1,24);
+  case 'torus': return new THREE.TorusGeometry(0.38,0.12,12,32);
+  default: return new THREE.BoxGeometry(1,1,1);
+ }
+}
+
+const typeNames={
+ sphere:'球',box:'箱',cylinder:'円柱',cone:'円錐',torus:'輪'
+};
+
+function createObject(type,data={}){
+ const material=new THREE.MeshStandardMaterial({
+  color:data.color || '#7c91d9',
+  roughness:0.65,
+  metalness:0.02
+ });
+ const mesh=new THREE.Mesh(makeGeometry(type),material);
+ mesh.castShadow=true;
+ mesh.receiveShadow=true;
+ mesh.userData.id=data.id ?? nextId++;
+ mesh.userData.type=type;
+ mesh.userData.label=data.label || typeNames[type]+' '+mesh.userData.id;
+ mesh.position.fromArray(data.position || [0,0,0]);
+ mesh.rotation.set(...(data.rotation || [0,0,0]));
+ mesh.scale.fromArray(data.scale || [1,1,1]);
+ scene.add(mesh);
+ objects.push(mesh);
+ return mesh;
+}
+
+function objectData(o){
  return {
-  transforms:objects.map(o=>({o,position:o.position.clone(),rotation:o.rotation.clone(),scale:o.scale.clone(),color:o.material.color.getHex()})),
-  joints:Object.entries(jointMap).map(([name,j])=>({name,rotation:j.rotation.clone()})),
-  selected:selectedObject
+  id:o.userData.id,
+  type:o.userData.type,
+  label:o.userData.label,
+  color:'#'+o.material.color.getHexString(),
+  position:o.position.toArray(),
+  rotation:[o.rotation.x,o.rotation.y,o.rotation.z],
+  scale:o.scale.toArray()
  };
 }
+
 function saveHistory(){
- history.push(snapshot());
- while(history.length>MAX_HISTORY)history.shift();
- $("undoButton").disabled=history.length===0;
+ history.push({
+  objects:objects.map(objectData),
+  selectedId:selected?.userData.id ?? null
+ });
+ if(history.length>40) history.shift();
+ $('undo').disabled=history.length===0;
 }
-$("undoButton").addEventListener("click",()=>{
- const s=history.pop();
- if(!s){say("元に戻せる操作がないよ。");return;}
- for(const item of s.transforms){
-  if(objects.includes(item.o)){
-   item.o.position.copy(item.position);item.o.rotation.copy(item.rotation);item.o.scale.copy(item.scale);item.o.material.color.setHex(item.color);
+
+function restoreHistory(){
+ if(!history.length) return;
+ const state=history.pop();
+ for(const o of objects){
+  scene.remove(o);
+  o.geometry.dispose();
+  o.material.dispose();
+ }
+ objects=[];
+ selected=null;
+ for(const d of state.objects) createObject(d.type,d);
+ selected=objects.find(o=>o.userData.id===state.selectedId) || null;
+ refreshList();
+ syncFields();
+ updateSelectionAppearance();
+ $('undo').disabled=history.length===0;
+ say('ひとつ前に戻したよ');
+}
+
+function selectObject(o){
+ selected=o;
+ refreshList();
+ syncFields();
+ updateSelectionAppearance();
+ if(o) say(o.userData.label+' を選択中');
+ else say('パーツを選択してね');
+}
+
+function updateSelectionAppearance(){
+ for(const o of objects){
+  o.material.emissive.set(o===selected ? '#25213c' : '#000000');
+ }
+}
+
+function refreshList(){
+ const list=$('objectList');
+ list.replaceChildren();
+ if(!objects.length){
+  list.textContent='まだパーツがありません';
+  return;
+ }
+ for(const o of objects){
+  const b=document.createElement('button');
+  b.className='objectItem'+(o===selected?' active':'');
+  b.textContent=(o===selected?'✓ ':'')+o.userData.label;
+  b.addEventListener('click',()=>selectObject(o));
+  list.appendChild(b);
+ }
+}
+
+function syncFields(){
+ const fields={
+  px:selected?.position.x ?? 0,
+  py:selected?.position.y ?? 0,
+  pz:selected?.position.z ?? 0,
+  rx:selected?THREE.MathUtils.radToDeg(selected.rotation.x):0,
+  ry:selected?THREE.MathUtils.radToDeg(selected.rotation.y):0,
+  rz:selected?THREE.MathUtils.radToDeg(selected.rotation.z):0,
+  sx:selected?.scale.x ?? 1,
+  sy:selected?.scale.y ?? 1,
+  sz:selected?.scale.z ?? 1
+ };
+ for(const [id,value] of Object.entries(fields)){
+  $(id).value=Number(value.toFixed(3));
+ }
+ if(selected) $('colorInput').value='#'+selected.material.color.getHexString();
+}
+
+function addObject(type){
+ saveHistory();
+ const mesh=createObject(type);
+ selectObject(mesh);
+ say(typeNames[type]+'を追加したよ');
+}
+
+document.querySelectorAll('[data-add]').forEach(button=>{
+ button.addEventListener('click',()=>addObject(button.dataset.add));
+});
+
+function applyTransform(){
+ if(!selected) return;
+ const n=id=>Number($(id).value)||0;
+ selected.position.set(n('px'),n('py'),n('pz'));
+ selected.rotation.set(
+  THREE.MathUtils.degToRad(n('rx')),
+  THREE.MathUtils.degToRad(n('ry')),
+  THREE.MathUtils.degToRad(n('rz'))
+ );
+ selected.scale.set(
+  Math.max(0.05,n('sx')),
+  Math.max(0.05,n('sy')),
+  Math.max(0.05,n('sz'))
+ );
+}
+
+const transformInputs=['px','py','pz','rx','ry','rz','sx','sy','sz'];
+transformInputs.forEach(id=>{
+ $(id).addEventListener('change',()=>{
+  if(!selected) return;
+  saveHistory();
+  applyTransform();
+  say('パーツを編集したよ');
+ });
+});
+
+$('applyColor').addEventListener('click',()=>{
+ if(!selected) return say('先にパーツを選択してね');
+ saveHistory();
+ selected.material.color.set($('colorInput').value);
+ say('色を変更したよ');
+});
+
+$('colorInput').addEventListener('change',()=>{
+ if(!selected) return;
+ saveHistory();
+ selected.material.color.set($('colorInput').value);
+});
+
+$('duplicate').addEventListener('click',()=>{
+ if(!selected) return say('複製するパーツを選択してね');
+ saveHistory();
+ const d=objectData(selected);
+ d.id=undefined;
+ d.label=typeNames[d.type]+' '+nextId;
+ d.position=[d.position[0]+0.35,d.position[1]+0.2,d.position[2]];
+ const copy=createObject(d.type,d);
+ selectObject(copy);
+ say('パーツを複製したよ');
+});
+
+$('delete').addEventListener('click',()=>{
+ if(!selected) return say('削除するパーツを選択してね');
+ saveHistory();
+ const old=selected;
+ scene.remove(old);
+ objects=objects.filter(o=>o!==old);
+ old.geometry.dispose();
+ old.material.dispose();
+ selected=null;
+ refreshList();
+ syncFields();
+ updateSelectionAppearance();
+ say('パーツを削除したよ');
+});
+
+$('clear').addEventListener('click',()=>{
+ if(!objects.length) return say('消すパーツがないよ');
+ saveHistory();
+ for(const o of objects){
+  scene.remove(o);
+  o.geometry.dispose();
+  o.material.dispose();
+ }
+ objects=[];
+ selected=null;
+ refreshList();
+ syncFields();
+ updateSelectionAppearance();
+ say('パーツをすべて消したよ');
+});
+
+$('undo').addEventListener('click',restoreHistory);
+$('undo').disabled=true;
+
+canvas.addEventListener('pointerdown',event=>{
+ const rect=canvas.getBoundingClientRect();
+ pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
+ pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
+ raycaster.setFromCamera(pointer,camera);
+ const hits=raycaster.intersectObjects(objects,false);
+ if(hits.length) selectObject(hits[0].object);
+});
+
+$('front').addEventListener('click',()=>{
+ camera.position.set(0,1.5,9);
+ controls.target.set(0,1,0);
+ controls.update();
+});
+
+$('side').addEventListener('click',()=>{
+ camera.position.set(9,1.5,0);
+ controls.target.set(0,1,0);
+ controls.update();
+});
+
+$('resetView').addEventListener('click',()=>{
+ camera.position.set(5,4,7);
+ controls.target.set(0,1,0);
+ controls.update();
+});
+
+$('gridToggle').addEventListener('click',()=>{
+ grid.visible=!grid.visible;
+ say(grid.visible?'床グリッドを表示':'床グリッドを非表示');
+});
+
+$('loadImage').addEventListener('click',()=>$('fileInput').click());
+
+$('fileInput').addEventListener('change',event=>{
+ const file=event.target.files?.[0];
+ if(!file) return;
+ const url=URL.createObjectURL(file);
+ const image=new Image();
+ image.onload=()=>{
+  if(referencePlane){
+   scene.remove(referencePlane);
+   referencePlane.geometry.dispose();
+   referencePlane.material.dispose();
   }
- }
- for(const item of s.joints){
-  if(jointMap[item.name])jointMap[item.name].rotation.copy(item.rotation);
- }
- selectedObject=objects.includes(s.selected)?s.selected:null;
- updateBoneGuide();updateObjectList();
- $("undoButton").disabled=history.length===0;
- say("変形を元に戻したよ。");
+  if(referenceTexture) referenceTexture.dispose();
+
+  referenceTexture=new THREE.Texture(image);
+  referenceTexture.colorSpace=THREE.SRGBColorSpace;
+  referenceTexture.needsUpdate=true;
+
+  const aspect=image.width/image.height;
+  const height=3;
+  const width=height*aspect;
+  const material=new THREE.MeshBasicMaterial({
+   map:referenceTexture,
+   transparent:true,
+   opacity:0.8,
+   side:THREE.DoubleSide,
+   depthWrite:false
+  });
+  referencePlane=new THREE.Mesh(
+   new THREE.PlaneGeometry(width,height),material
+  );
+  referencePlane.position.set(0,1.5,-1.5);
+  referencePlane.renderOrder=-1;
+  scene.add(referencePlane);
+  referenceVisible=true;
+  referencePlane.visible=true;
+  URL.revokeObjectURL(url);
+  say('参考画像を読み込んだよ');
+ };
+ image.onerror=()=>{
+  URL.revokeObjectURL(url);
+  say('画像を読み込めなかったよ');
+ };
+ image.src=url;
+ event.target.value='';
 });
 
-/* 移動・拡大縮小・オブジェクト回転 */
-function requireObject(){
- if(!selectedObject){say("先にオブジェクト一覧から選んでね。");return false;}
- return true;
-}
-function move(axis,amount){
- if(!requireObject())return;
- saveHistory();selectedObject.position[axis]+=amount;
- updateBoneGuide();say("オブジェクトを移動したよ。");
-}
-[
- ["moveXMinus","x",-.2],["moveXPlus","x",.2],
- ["moveYMinus","y",-.2],["moveYPlus","y",.2],
- ["moveZMinus","z",-.2],["moveZPlus","z",.2]
-].forEach(([id,axis,n])=>$(id).addEventListener("click",()=>move(axis,n)));
-function scale(factor){
- if(!requireObject())return;
- saveHistory();selectedObject.scale.multiplyScalar(factor);updateBoneGuide();say("拡大縮小したよ。");
-}
-$("scaleDown").addEventListener("click",()=>scale(.9));
-$("scaleUp").addEventListener("click",()=>scale(1.1));
-function rotateObject(axis,sign){
- if(!requireObject())return;
- saveHistory();
- selectedObject.rotation[axis]+=THREE.MathUtils.degToRad(Number($("rotationAngle").value))*sign;
- updateBoneGuide();say("オブジェクトを回転したよ。");
-}
-[
- ["rotXMinus","x",-1],["rotXPlus","x",1],
- ["rotYMinus","y",-1],["rotYPlus","y",1],
- ["rotZMinus","z",-1],["rotZPlus","z",1]
-].forEach(([id,axis,sign])=>$(id).addEventListener("click",()=>rotateObject(axis,sign)));
-$("resetRotation").addEventListener("click",()=>{
- if(!requireObject())return;
- saveHistory();selectedObject.rotation.set(0,0,0);updateBoneGuide();say("回転をリセットしたよ。");
-});
-$("applyColor").addEventListener("click",()=>{
- if(!requireObject())return;
- saveHistory();selectedObject.material.color.set($("colorInput").value);say("色を変更したよ。");
-});
-function deleteObject(mesh){
- if(!mesh||!objects.includes(mesh))return;
- saveHistory();
- mesh.parent?.remove(mesh);
- disposeObject(mesh);
- objects=objects.filter(o=>o!==mesh);
- if(selectedObject===mesh)selectedObject=null;
- updateObjectList();say("オブジェクトを削除したよ。");
-}
-$("deleteObject").addEventListener("click",()=>deleteObject(selectedObject));
-$("resetTransform").addEventListener("click",()=>{
- if(!requireObject())return;
- saveHistory();selectedObject.position.set(0,.8,0);selectedObject.rotation.set(0,0,0);selectedObject.scale.set(1,1,1);
- updateBoneGuide();say("変形をリセットしたよ。");
-});
-$("resetCamera").addEventListener("click",()=>{
- camera.position.set(6,5,9);controls.target.set(0,2,0);controls.update();say("カメラをリセットしたよ。");
+$('toggleImage').addEventListener('click',()=>{
+ if(!referencePlane) return say('先に参考画像を読み込んでね');
+ referenceVisible=!referenceVisible;
+ referencePlane.visible=referenceVisible;
+ say(referenceVisible?'参考画像を表示':'参考画像を非表示');
 });
 
-/* 画面サイズ */
+$('removeImage').addEventListener('click',()=>{
+ if(!referencePlane) return say('参考画像はまだないよ');
+ scene.remove(referencePlane);
+ referencePlane.geometry.dispose();
+ referencePlane.material.dispose();
+ referencePlane=null;
+ if(referenceTexture) referenceTexture.dispose();
+ referenceTexture=null;
+ say('参考画像を削除したよ');
+});
+
 function resize(){
- const w=Math.max(1,viewport.clientWidth),h=Math.max(1,viewport.clientHeight);
- camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);
+ const width=canvas.clientWidth;
+ const height=canvas.clientHeight;
+ if(!width||!height) return;
+ renderer.setSize(width,height,false);
+ camera.aspect=width/height;
+ camera.updateProjectionMatrix();
 }
-if("ResizeObserver" in window)new ResizeObserver(resize).observe(viewport);
-else window.addEventListener("resize",resize);
+new ResizeObserver(resize).observe($('workspace'));
+resize();
 
 function animate(){
  requestAnimationFrame(animate);
  controls.update();
- updateBoneGuide();
  renderer.render(scene,camera);
 }
-resize();
 animate();
-say("準備完了。人体を作成して骨格を試してね。");
+
+refreshList();
+syncFields();
+say('空の作業スペース');
 </script>
 </body>
 </html>

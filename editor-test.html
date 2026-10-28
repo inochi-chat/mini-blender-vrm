@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="ja">
 <head>
@@ -19,7 +18,7 @@ header{height:46px;flex-shrink:0;display:flex;align-items:center;justify-content
 #status{font-size:11px;color:#aeb8cc;font-weight:400}
 #workspace{position:relative;flex:1;min-height:100px;overflow:hidden}
 #view{width:100%;height:100%;display:block;touch-action:none}
-#hint{position:absolute;left:10px;top:10px;background:#171923bb;padding:7px 9px;border-radius:7px;font-size:11px;color:#d2d7e3;pointer-events:none}
+#hint{position:absolute;left:10px;top:10px;background:#171923dd;padding:7px 9px;border-radius:7px;font-size:11px;color:#d2d7e3;pointer-events:none;line-height:1.6}
 #panel{flex-shrink:0;max-height:48%;overflow:auto;background:#202431;border-top:1px solid #3b4253;padding:10px;padding-bottom:max(12px,env(safe-area-inset-bottom))}
 .section{border:1px solid #3b4253;border-radius:10px;padding:9px;margin-bottom:9px}
 h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
@@ -29,13 +28,14 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
 .field{display:flex;align-items:center;gap:5px;flex:1;min-width:75px;font-size:11px;color:#bdc6d8}
 .field span{width:15px;flex-shrink:0}
 .field input{width:100%}
-#objectList{display:flex;flex-wrap:wrap;gap:5px;max-height:90px;overflow:auto}
+#objectList{display:flex;flex-wrap:wrap;gap:5px;max-height:100px;overflow:auto}
 .objectItem{font-size:12px;padding:6px 8px}
 .objectItem.active{background:#4264a5;border-color:#91b5ff}
 .small{font-size:11px;color:#aeb8cc;line-height:1.5}
 .danger{background:#58333c}
 #colorInput{width:42px;height:34px;padding:2px}
 #fileInput{display:none}
+#parentSelect{width:100%;flex:1}
 @media(min-width:700px){
  #app{flex-direction:row;flex-wrap:wrap}
  header{width:100%}
@@ -50,12 +50,15 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
  <span>My Character Studio</span>
  <span id="status">準備完了</span>
 </header>
-
 <main id="workspace">
  <canvas id="view"></canvas>
- <div id="hint">空の作業スペース<br>ドラッグ：視点移動 ／ ピンチ：拡大縮小<br>パーツを追加してキャラクターを作ろう</div>
+ <div id="hint">
+  パーツを追加してキャラクターを作ろう<br>
+  パーツをドラッグ：移動<br>
+  空いている場所をドラッグ：視点移動<br>
+  ピンチ：拡大縮小
+ </div>
 </main>
-
 <section id="panel">
  <div class="section">
   <h3>① パーツを追加</h3>
@@ -69,9 +72,8 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
    <button data-add="torus">◎ 輪</button>
    <button id="duplicate">複製</button>
   </div>
-  <div class="small">追加したパーツは自由に移動・回転・拡大縮小できるよ。</div>
+  <div class="small">パーツを指でつかんで移動できるよ。</div>
  </div>
-
  <div class="section">
   <h3>② パーツ一覧</h3>
   <div id="objectList" class="small">まだパーツがありません</div>
@@ -81,9 +83,25 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
    <button id="clear">全消去</button>
   </div>
  </div>
-
  <div class="section">
-  <h3>③ 選択パーツの位置</h3>
+  <h3>③ 親子付け</h3>
+  <div class="small" style="margin-bottom:8px">
+   先に子にするパーツを選び、親パーツを選んで設定してね。親を動かすと子も連動するよ。
+  </div>
+  <div class="row">
+   <label for="parentSelect" class="small">親パーツ</label>
+   <select id="parentSelect">
+    <option value="">親パーツを選択</option>
+   </select>
+  </div>
+  <div class="row">
+   <button id="attach">親子付けする</button>
+   <button id="detach">親子解除</button>
+  </div>
+  <div id="relationship" class="small">選択パーツの親子関係：なし</div>
+ </div>
+ <div class="section">
+  <h3>④ 選択パーツの位置</h3>
   <div class="row">
    <label class="field"><span>X</span><input id="px" type="number" step="0.1" value="0"></label>
    <label class="field"><span>Y</span><input id="py" type="number" step="0.1" value="0"></label>
@@ -107,9 +125,8 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
    <button id="applyColor">色を適用</button>
   </div>
  </div>
-
  <div class="section">
-  <h3>④ 参考画像</h3>
+  <h3>⑤ 参考画像</h3>
   <div class="row">
    <button id="loadImage">画像を読み込む</button>
    <button id="toggleImage">表示切替</button>
@@ -118,9 +135,8 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
   </div>
   <div class="small">正面の参考画像を作業空間の奥に表示するよ。</div>
  </div>
-
  <div class="section">
-  <h3>⑤ 表示設定</h3>
+  <h3>⑥ 表示設定</h3>
   <div class="row">
    <button id="front">正面</button>
    <button id="side">横</button>
@@ -129,7 +145,9 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
   <div class="row">
    <button id="gridToggle">床グリッド切替</button>
   </div>
-  <div class="small">この版ではパーツの組み立て・基本編集・取り消しを実装。関節の親子付けや滑らかなスキニングはまだ未実装だよ。</div>
+  <div class="small">
+   ドラッグ移動・親子付け・基本編集に対応。親子付けはパーツの連動機能で、関節の自然な変形や滑らかなスキニングとは別の機能だよ。
+  </div>
  </div>
 </section>
 </div>
@@ -144,38 +162,33 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
 const $ = id => document.getElementById(id);
 const canvas = $('view');
-
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#171923');
-
 const camera = new THREE.PerspectiveCamera(45,1,0.01,1000);
 camera.position.set(5,4,7);
-
-const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+const renderer = new THREE.WebGLRenderer({
+ canvas,
+ antialias:true,
+ alpha:false
+});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-
 const controls = new OrbitControls(camera,renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0,1,0);
 controls.minDistance = 1;
 controls.maxDistance = 50;
-
 scene.add(new THREE.HemisphereLight(0xffffff,0x55566b,2));
-
 const light = new THREE.DirectionalLight(0xffffff,2.3);
 light.position.set(4,8,6);
 light.castShadow = true;
 scene.add(light);
-
 const grid = new THREE.GridHelper(20,20,0x59657e,0x303746);
 scene.add(grid);
-
 const floor = new THREE.Mesh(
  new THREE.PlaneGeometry(200,200),
  new THREE.MeshStandardMaterial({color:0x202431,roughness:1})
@@ -184,10 +197,8 @@ floor.rotation.x=-Math.PI/2;
 floor.position.y=-0.015;
 floor.receiveShadow=true;
 scene.add(floor);
-
 const axes = new THREE.AxesHelper(1.5);
 scene.add(axes);
-
 let objects=[];
 let selected=null;
 let nextId=1;
@@ -195,14 +206,17 @@ let history=[];
 let referencePlane=null;
 let referenceTexture=null;
 let referenceVisible=true;
-
+let dragState=null;
 const raycaster=new THREE.Raycaster();
 const pointer=new THREE.Vector2();
-
+const dragPlane=new THREE.Plane();
+const dragOffset=new THREE.Vector3();
+const dragHit=new THREE.Vector3();
+const dragWorldPoint=new THREE.Vector3();
+const cameraDirection=new THREE.Vector3();
 function say(message){
  $('status').textContent=message;
 }
-
 function makeGeometry(type){
  switch(type){
   case 'sphere': return new THREE.SphereGeometry(0.5,24,16);
@@ -213,11 +227,21 @@ function makeGeometry(type){
   default: return new THREE.BoxGeometry(1,1,1);
  }
 }
-
 const typeNames={
  sphere:'球',box:'箱',cylinder:'円柱',cone:'円錐',torus:'輪'
 };
-
+function getParentObject(o){
+ return o && objects.includes(o.parent) ? o.parent : null;
+}
+function getDescendants(o,result=[]){
+ for(const child of o.children){
+  if(objects.includes(child)){
+   result.push(child);
+   getDescendants(child,result);
+  }
+ }
+ return result;
+}
 function createObject(type,data={}){
  const material=new THREE.MeshStandardMaterial({
   color:data.color || '#7c91d9',
@@ -235,9 +259,9 @@ function createObject(type,data={}){
  mesh.scale.fromArray(data.scale || [1,1,1]);
  scene.add(mesh);
  objects.push(mesh);
+ nextId=Math.max(nextId,Number(mesh.userData.id)+1);
  return mesh;
 }
-
 function objectData(o){
  return {
   id:o.userData.id,
@@ -246,10 +270,10 @@ function objectData(o){
   color:'#'+o.material.color.getHexString(),
   position:o.position.toArray(),
   rotation:[o.rotation.x,o.rotation.y,o.rotation.z],
-  scale:o.scale.toArray()
+  scale:o.scale.toArray(),
+  parentId:getParentObject(o)?.userData.id ?? null
  };
 }
-
 function saveHistory(){
  history.push({
   objects:objects.map(objectData),
@@ -258,41 +282,58 @@ function saveHistory(){
  if(history.length>40) history.shift();
  $('undo').disabled=history.length===0;
 }
-
+function disposeObject(o){
+ if(o.parent) o.parent.remove(o);
+ o.geometry.dispose();
+ o.material.dispose();
+}
 function restoreHistory(){
  if(!history.length) return;
  const state=history.pop();
  for(const o of objects){
-  scene.remove(o);
+  if(o.parent) o.parent.remove(o);
   o.geometry.dispose();
   o.material.dispose();
  }
  objects=[];
  selected=null;
- for(const d of state.objects) createObject(d.type,d);
+ // 先に全パーツを作り、あとから親子関係を復元する
+ const dataById=new Map();
+ for(const d of state.objects){
+  const o=createObject(d.type,d);
+  dataById.set(d.id,{o,d});
+ }
+ for(const {o,d} of dataById.values()){
+  if(d.parentId==null) continue;
+  const parentRecord=dataById.get(d.parentId);
+  if(parentRecord && parentRecord.o!==o){
+   parentRecord.o.add(o);
+  }
+ }
  selected=objects.find(o=>o.userData.id===state.selectedId) || null;
  refreshList();
  syncFields();
  updateSelectionAppearance();
+ updateParentSelect();
+ updateRelationship();
  $('undo').disabled=history.length===0;
  say('ひとつ前に戻したよ');
 }
-
 function selectObject(o){
  selected=o;
  refreshList();
  syncFields();
  updateSelectionAppearance();
+ updateParentSelect();
+ updateRelationship();
  if(o) say(o.userData.label+' を選択中');
  else say('パーツを選択してね');
 }
-
 function updateSelectionAppearance(){
  for(const o of objects){
   o.material.emissive.set(o===selected ? '#25213c' : '#000000');
  }
 }
-
 function refreshList(){
  const list=$('objectList');
  list.replaceChildren();
@@ -303,12 +344,13 @@ function refreshList(){
  for(const o of objects){
   const b=document.createElement('button');
   b.className='objectItem'+(o===selected?' active':'');
-  b.textContent=(o===selected?'✓ ':'')+o.userData.label;
+  const parent=getParentObject(o);
+  b.textContent=(o===selected?'✓ ':'')+
+   (parent?'↳ ':'')+o.userData.label;
   b.addEventListener('click',()=>selectObject(o));
   list.appendChild(b);
  }
 }
-
 function syncFields(){
  const fields={
   px:selected?.position.x ?? 0,
@@ -324,20 +366,56 @@ function syncFields(){
  for(const [id,value] of Object.entries(fields)){
   $(id).value=Number(value.toFixed(3));
  }
- if(selected) $('colorInput').value='#'+selected.material.color.getHexString();
+ if(selected){
+  $('colorInput').value='#'+selected.material.color.getHexString();
+ }
 }
-
+function updateParentSelect(){
+ const select=$('parentSelect');
+ const oldValue=select.value;
+ select.replaceChildren();
+ const placeholder=document.createElement('option');
+ placeholder.value='';
+ placeholder.textContent='親パーツを選択';
+ select.appendChild(placeholder);
+ for(const o of objects){
+  if(o===selected) continue;
+  // 自分自身の子孫を親に指定すると循環するため除外
+  if(selected && getDescendants(selected).includes(o)) continue;
+  const option=document.createElement('option');
+  option.value=String(o.userData.id);
+  option.textContent=o.userData.label;
+  select.appendChild(option);
+ }
+ if([...select.options].some(option=>option.value===oldValue)){
+  select.value=oldValue;
+ }
+}
+function updateRelationship(){
+ const area=$('relationship');
+ if(!selected){
+  area.textContent='選択パーツの親子関係：なし';
+  return;
+ }
+ const parent=getParentObject(selected);
+ const children=getDescendants(selected);
+ let text='親：'+(parent?parent.userData.label:'なし');
+ if(children.length){
+  text+=' ／ 子：'+children.map(o=>o.userData.label).join('、');
+ }else{
+  text+=' ／ 子：なし';
+ }
+ area.textContent=text;
+}
 function addObject(type){
  saveHistory();
  const mesh=createObject(type);
  selectObject(mesh);
  say(typeNames[type]+'を追加したよ');
 }
-
 document.querySelectorAll('[data-add]').forEach(button=>{
  button.addEventListener('click',()=>addObject(button.dataset.add));
 });
-
 function applyTransform(){
  if(!selected) return;
  const n=id=>Number($(id).value)||0;
@@ -353,7 +431,6 @@ function applyTransform(){
   Math.max(0.05,n('sz'))
  );
 }
-
 const transformInputs=['px','py','pz','rx','ry','rz','sx','sy','sz'];
 transformInputs.forEach(id=>{
  $(id).addEventListener('change',()=>{
@@ -363,52 +440,57 @@ transformInputs.forEach(id=>{
   say('パーツを編集したよ');
  });
 });
-
 $('applyColor').addEventListener('click',()=>{
  if(!selected) return say('先にパーツを選択してね');
  saveHistory();
  selected.material.color.set($('colorInput').value);
  say('色を変更したよ');
 });
-
 $('colorInput').addEventListener('change',()=>{
  if(!selected) return;
  saveHistory();
  selected.material.color.set($('colorInput').value);
 });
-
 $('duplicate').addEventListener('click',()=>{
  if(!selected) return say('複製するパーツを選択してね');
  saveHistory();
  const d=objectData(selected);
  d.id=undefined;
+ d.parentId=null;
  d.label=typeNames[d.type]+' '+nextId;
- d.position=[d.position[0]+0.35,d.position[1]+0.2,d.position[2]];
+ d.position=[
+  d.position[0]+0.35,
+  d.position[1]+0.2,
+  d.position[2]
+ ];
  const copy=createObject(d.type,d);
  selectObject(copy);
  say('パーツを複製したよ');
 });
-
 $('delete').addEventListener('click',()=>{
  if(!selected) return say('削除するパーツを選択してね');
  saveHistory();
  const old=selected;
- scene.remove(old);
+ // 子パーツを消さず、親がなくなる場合はシーン直下へ移す
+ const descendants=getDescendants(old);
+ for(const child of descendants){
+  scene.attach(child);
+ }
+ disposeObject(old);
  objects=objects.filter(o=>o!==old);
- old.geometry.dispose();
- old.material.dispose();
  selected=null;
  refreshList();
  syncFields();
  updateSelectionAppearance();
+ updateParentSelect();
+ updateRelationship();
  say('パーツを削除したよ');
 });
-
 $('clear').addEventListener('click',()=>{
  if(!objects.length) return say('消すパーツがないよ');
  saveHistory();
  for(const o of objects){
-  scene.remove(o);
+  if(o.parent) o.parent.remove(o);
   o.geometry.dispose();
   o.material.dispose();
  }
@@ -417,46 +499,140 @@ $('clear').addEventListener('click',()=>{
  refreshList();
  syncFields();
  updateSelectionAppearance();
+ updateParentSelect();
+ updateRelationship();
  say('パーツをすべて消したよ');
 });
-
+$('attach').addEventListener('click',()=>{
+ if(!selected) return say('子にするパーツを先に選んでね');
+ const parentId=Number($('parentSelect').value);
+ const parent=objects.find(o=>o.userData.id===parentId);
+ if(!parent) return say('親パーツを選択してね');
+ if(parent===selected) return say('自分自身は親にできないよ');
+ if(getDescendants(selected).includes(parent)){
+  return say('子孫は親に指定できないよ');
+ }
+ saveHistory();
+ // attachは見た目のワールド位置を保ったまま親の下に移す
+ parent.attach(selected);
+ refreshList();
+ syncFields();
+ updateParentSelect();
+ updateRelationship();
+ say(parent.userData.label+' に親子付けしたよ');
+});
+$('detach').addEventListener('click',()=>{
+ if(!selected) return say('解除するパーツを選択してね');
+ const parent=getParentObject(selected);
+ if(!parent) return say('このパーツには親がいないよ');
+ saveHistory();
+ // シーン直下へ戻し、ワールド位置・回転・大きさを保つ
+ scene.attach(selected);
+ refreshList();
+ syncFields();
+ updateParentSelect();
+ updateRelationship();
+ say('親子関係を解除したよ');
+});
 $('undo').addEventListener('click',restoreHistory);
 $('undo').disabled=true;
-
-canvas.addEventListener('pointerdown',event=>{
+// 指でパーツをドラッグして移動する
+function updatePointer(event){
  const rect=canvas.getBoundingClientRect();
  pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
  pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
+}
+function getHitObject(event){
+ updatePointer(event);
  raycaster.setFromCamera(pointer,camera);
  const hits=raycaster.intersectObjects(objects,false);
- if(hits.length) selectObject(hits[0].object);
-});
-
+ return hits.length?hits[0].object:null;
+}
+function beginDrag(event){
+ if(event.pointerType==='mouse' && event.button!==0) return;
+ const hit=getHitObject(event);
+ if(!hit) return;
+ // パーツに触れた操作はOrbitControlsに渡さない
+ event.preventDefault();
+ event.stopPropagation();
+ event.stopImmediatePropagation();
+ selectObject(hit);
+ saveHistory();
+ controls.enabled=false;
+ camera.getWorldDirection(cameraDirection);
+ dragPlane.setFromNormalAndCoplanarPoint(
+  cameraDirection,
+  hit.getWorldPosition(new THREE.Vector3())
+ );
+ raycaster.setFromCamera(pointer,camera);
+ if(raycaster.ray.intersectPlane(dragPlane,dragHit)){
+  dragOffset.copy(hit.getWorldPosition(new THREE.Vector3())).sub(dragHit);
+ }else{
+  dragOffset.set(0,0,0);
+ }
+ dragState={
+  object:hit,
+  pointerId:event.pointerId,
+  moved:false
+ };
+ try{
+  canvas.setPointerCapture(event.pointerId);
+ }catch(error){}
+ say(hit.userData.label+' を移動中');
+}
+function moveDrag(event){
+ if(!dragState || event.pointerId!==dragState.pointerId) return;
+ event.preventDefault();
+ updatePointer(event);
+ raycaster.setFromCamera(pointer,camera);
+ if(!raycaster.ray.intersectPlane(dragPlane,dragHit)) return;
+ dragWorldPoint.copy(dragHit).add(dragOffset);
+ const obj=dragState.object;
+ // 親がいる場合もワールド座標から正しいローカル座標に変換
+ if(obj.parent){
+  obj.parent.worldToLocal(dragWorldPoint);
+ }
+ obj.position.copy(dragWorldPoint);
+ dragState.moved=true;
+ syncFields();
+}
+function endDrag(event){
+ if(!dragState) return;
+ if(event && event.pointerId!==dragState.pointerId) return;
+ const moved=dragState.moved;
+ dragState=null;
+ controls.enabled=true;
+ if(moved){
+  say('パーツを移動したよ');
+  refreshList();
+  updateRelationship();
+ }
+}
+canvas.addEventListener('pointerdown',beginDrag,{capture:true});
+canvas.addEventListener('pointermove',moveDrag,{passive:false});
+canvas.addEventListener('pointerup',endDrag);
+canvas.addEventListener('pointercancel',endDrag);
+canvas.addEventListener('lostpointercapture',endDrag);
 $('front').addEventListener('click',()=>{
  camera.position.set(0,1.5,9);
  controls.target.set(0,1,0);
  controls.update();
 });
-
 $('side').addEventListener('click',()=>{
  camera.position.set(9,1.5,0);
  controls.target.set(0,1,0);
  controls.update();
 });
-
 $('resetView').addEventListener('click',()=>{
  camera.position.set(5,4,7);
  controls.target.set(0,1,0);
  controls.update();
 });
-
 $('gridToggle').addEventListener('click',()=>{
  grid.visible=!grid.visible;
  say(grid.visible?'床グリッドを表示':'床グリッドを非表示');
 });
-
 $('loadImage').addEventListener('click',()=>$('fileInput').click());
-
 $('fileInput').addEventListener('change',event=>{
  const file=event.target.files?.[0];
  if(!file) return;
@@ -469,11 +645,9 @@ $('fileInput').addEventListener('change',event=>{
    referencePlane.material.dispose();
   }
   if(referenceTexture) referenceTexture.dispose();
-
   referenceTexture=new THREE.Texture(image);
   referenceTexture.colorSpace=THREE.SRGBColorSpace;
   referenceTexture.needsUpdate=true;
-
   const aspect=image.width/image.height;
   const height=3;
   const width=height*aspect;
@@ -485,7 +659,8 @@ $('fileInput').addEventListener('change',event=>{
    depthWrite:false
   });
   referencePlane=new THREE.Mesh(
-   new THREE.PlaneGeometry(width,height),material
+   new THREE.PlaneGeometry(width,height),
+   material
   );
   referencePlane.position.set(0,1.5,-1.5);
   referencePlane.renderOrder=-1;
@@ -502,14 +677,12 @@ $('fileInput').addEventListener('change',event=>{
  image.src=url;
  event.target.value='';
 });
-
 $('toggleImage').addEventListener('click',()=>{
  if(!referencePlane) return say('先に参考画像を読み込んでね');
  referenceVisible=!referenceVisible;
  referencePlane.visible=referenceVisible;
  say(referenceVisible?'参考画像を表示':'参考画像を非表示');
 });
-
 $('removeImage').addEventListener('click',()=>{
  if(!referencePlane) return say('参考画像はまだないよ');
  scene.remove(referencePlane);
@@ -520,7 +693,6 @@ $('removeImage').addEventListener('click',()=>{
  referenceTexture=null;
  say('参考画像を削除したよ');
 });
-
 function resize(){
  const width=canvas.clientWidth;
  const height=canvas.clientHeight;
@@ -531,16 +703,16 @@ function resize(){
 }
 new ResizeObserver(resize).observe($('workspace'));
 resize();
-
 function animate(){
  requestAnimationFrame(animate);
  controls.update();
  renderer.render(scene,camera);
 }
 animate();
-
 refreshList();
 syncFields();
+updateParentSelect();
+updateRelationship();
 say('空の作業スペース');
 </script>
 </body>

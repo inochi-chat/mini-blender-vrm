@@ -34,7 +34,7 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
 .small{font-size:11px;color:#aeb8cc;line-height:1.5}
 .danger{background:#58333c}
 #colorInput{width:42px;height:34px;padding:2px}
-#fileInput{display:none}
+.hiddenFile{display:none}
 #parentSelect{width:100%;flex:1}
 @media(min-width:700px){
  #app{flex-direction:row;flex-wrap:wrap}
@@ -53,7 +53,6 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
 <main id="workspace">
  <canvas id="view"></canvas>
  <div id="hint">
-  パーツを追加してキャラクターを作ろう<br>
   パーツをドラッグ：移動<br>
   空いている場所をドラッグ：視点移動<br>
   ピンチ：拡大縮小
@@ -72,7 +71,7 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
    <button data-add="torus">◎ 輪</button>
    <button id="duplicate">複製</button>
   </div>
-  <div class="small">パーツを指でつかんで移動できるよ。</div>
+  <div class="small">パーツを追加して組み立てよう。</div>
  </div>
  <div class="section">
   <h3>② パーツ一覧</h3>
@@ -86,10 +85,9 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
  <div class="section">
   <h3>③ 親子付け</h3>
   <div class="small" style="margin-bottom:8px">
-   先に子にするパーツを選び、親パーツを選んで設定してね。親を動かすと子も連動するよ。
+   子にするパーツを選び、親パーツを指定してね。
   </div>
   <div class="row">
-   <label for="parentSelect" class="small">親パーツ</label>
    <select id="parentSelect">
     <option value="">親パーツを選択</option>
    </select>
@@ -98,7 +96,7 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
    <button id="attach">親子付けする</button>
    <button id="detach">親子解除</button>
   </div>
-  <div id="relationship" class="small">選択パーツの親子関係：なし</div>
+  <div id="relationship" class="small">親子関係：なし</div>
  </div>
  <div class="section">
   <h3>④ 選択パーツの位置</h3>
@@ -126,17 +124,33 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
   </div>
  </div>
  <div class="section">
-  <h3>⑤ 参考画像</h3>
+  <h3>⑤ 画像・モデルの保存</h3>
+  <div class="row">
+   <button id="exportPng">PNG画像を書き出す</button>
+  </div>
+  <div class="row">
+   <button id="saveModel">モデルデータを保存</button>
+   <button id="loadModel">モデルを読み込む</button>
+   <input id="modelInput" class="hiddenFile" type="file" accept=".json,application/json">
+  </div>
+  <div class="small">
+   PNG：現在の3D表示を画像にするよ。<br>
+   JSON：パーツの形・色・位置・回転・大きさ・親子関係を保存するよ。<br>
+   読み込み時は現在のパーツが置き換わるよ。大事なデータは先に保存してね。
+  </div>
+ </div>
+ <div class="section">
+  <h3>⑥ 参考画像</h3>
   <div class="row">
    <button id="loadImage">画像を読み込む</button>
    <button id="toggleImage">表示切替</button>
    <button id="removeImage" class="danger">画像を削除</button>
-   <input id="fileInput" type="file" accept="image/*">
+   <input id="fileInput" class="hiddenFile" type="file" accept="image/*">
   </div>
   <div class="small">正面の参考画像を作業空間の奥に表示するよ。</div>
  </div>
  <div class="section">
-  <h3>⑥ 表示設定</h3>
+  <h3>⑦ 表示設定</h3>
   <div class="row">
    <button id="front">正面</button>
    <button id="side">横</button>
@@ -146,7 +160,7 @@ h3{font-size:13px;margin:0 0 8px;color:#c9d5ee}
    <button id="gridToggle">床グリッド切替</button>
   </div>
   <div class="small">
-   ドラッグ移動・親子付け・基本編集に対応。親子付けはパーツの連動機能で、関節の自然な変形や滑らかなスキニングとは別の機能だよ。
+   保存データはJSON形式。関節の自然な変形や滑らかなスキニングは未実装だよ。
   </div>
  </div>
 </section>
@@ -171,7 +185,8 @@ camera.position.set(5,4,7);
 const renderer = new THREE.WebGLRenderer({
  canvas,
  antialias:true,
- alpha:false
+ alpha:false,
+ preserveDrawingBuffer:true
 });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,2));
 renderer.shadowMap.enabled = true;
@@ -224,11 +239,15 @@ function makeGeometry(type){
   case 'cylinder': return new THREE.CylinderGeometry(0.5,0.5,1,24);
   case 'cone': return new THREE.ConeGeometry(0.5,1,24);
   case 'torus': return new THREE.TorusGeometry(0.38,0.12,12,32);
-  default: return new THREE.BoxGeometry(1,1,1);
+  default: throw new Error('未対応のパーツ形式です: '+type);
  }
 }
 const typeNames={
- sphere:'球',box:'箱',cylinder:'円柱',cone:'円錐',torus:'輪'
+ sphere:'球',
+ box:'箱',
+ cylinder:'円柱',
+ cone:'円錐',
+ torus:'輪'
 };
 function getParentObject(o){
  return o && objects.includes(o.parent) ? o.parent : null;
@@ -243,6 +262,9 @@ function getDescendants(o,result=[]){
  return result;
 }
 function createObject(type,data={}){
+ if(!Object.hasOwn(typeNames,type)){
+  throw new Error('未対応のパーツ形式です: '+type);
+ }
  const material=new THREE.MeshStandardMaterial({
   color:data.color || '#7c91d9',
   roughness:0.65,
@@ -287,9 +309,7 @@ function disposeObject(o){
  o.geometry.dispose();
  o.material.dispose();
 }
-function restoreHistory(){
- if(!history.length) return;
- const state=history.pop();
+function clearObjects(){
  for(const o of objects){
   if(o.parent) o.parent.remove(o);
   o.geometry.dispose();
@@ -297,7 +317,11 @@ function restoreHistory(){
  }
  objects=[];
  selected=null;
- // 先に全パーツを作り、あとから親子関係を復元する
+}
+function restoreHistory(){
+ if(!history.length) return;
+ const state=history.pop();
+ clearObjects();
  const dataById=new Map();
  for(const d of state.objects){
   const o=createObject(d.type,d);
@@ -345,8 +369,7 @@ function refreshList(){
   const b=document.createElement('button');
   b.className='objectItem'+(o===selected?' active':'');
   const parent=getParentObject(o);
-  b.textContent=(o===selected?'✓ ':'')+
-   (parent?'↳ ':'')+o.userData.label;
+  b.textContent=(o===selected?'✓ ':'')+(parent?'↳ ':'')+o.userData.label;
   b.addEventListener('click',()=>selectObject(o));
   list.appendChild(b);
  }
@@ -380,7 +403,6 @@ function updateParentSelect(){
  select.appendChild(placeholder);
  for(const o of objects){
   if(o===selected) continue;
-  // 自分自身の子孫を親に指定すると循環するため除外
   if(selected && getDescendants(selected).includes(o)) continue;
   const option=document.createElement('option');
   option.value=String(o.userData.id);
@@ -392,20 +414,17 @@ function updateParentSelect(){
  }
 }
 function updateRelationship(){
- const area=$('relationship');
  if(!selected){
-  area.textContent='選択パーツの親子関係：なし';
+  $('relationship').textContent='親子関係：なし';
   return;
  }
  const parent=getParentObject(selected);
  const children=getDescendants(selected);
  let text='親：'+(parent?parent.userData.label:'なし');
- if(children.length){
-  text+=' ／ 子：'+children.map(o=>o.userData.label).join('、');
- }else{
-  text+=' ／ 子：なし';
- }
- area.textContent=text;
+ text+=' ／ 子：'+(children.length
+  ?children.map(o=>o.userData.label).join('、')
+  :'なし');
+ $('relationship').textContent=text;
 }
 function addObject(type){
  saveHistory();
@@ -431,8 +450,7 @@ function applyTransform(){
   Math.max(0.05,n('sz'))
  );
 }
-const transformInputs=['px','py','pz','rx','ry','rz','sx','sy','sz'];
-transformInputs.forEach(id=>{
+['px','py','pz','rx','ry','rz','sx','sy','sz'].forEach(id=>{
  $(id).addEventListener('change',()=>{
   if(!selected) return;
   saveHistory();
@@ -458,11 +476,7 @@ $('duplicate').addEventListener('click',()=>{
  d.id=undefined;
  d.parentId=null;
  d.label=typeNames[d.type]+' '+nextId;
- d.position=[
-  d.position[0]+0.35,
-  d.position[1]+0.2,
-  d.position[2]
- ];
+ d.position=[d.position[0]+0.35,d.position[1]+0.2,d.position[2]];
  const copy=createObject(d.type,d);
  selectObject(copy);
  say('パーツを複製したよ');
@@ -471,9 +485,8 @@ $('delete').addEventListener('click',()=>{
  if(!selected) return say('削除するパーツを選択してね');
  saveHistory();
  const old=selected;
- // 子パーツを消さず、親がなくなる場合はシーン直下へ移す
- const descendants=getDescendants(old);
- for(const child of descendants){
+ // 子孫を残し、削除するパーツの親だけを外す
+ for(const child of getDescendants(old)){
   scene.attach(child);
  }
  disposeObject(old);
@@ -489,13 +502,7 @@ $('delete').addEventListener('click',()=>{
 $('clear').addEventListener('click',()=>{
  if(!objects.length) return say('消すパーツがないよ');
  saveHistory();
- for(const o of objects){
-  if(o.parent) o.parent.remove(o);
-  o.geometry.dispose();
-  o.material.dispose();
- }
- objects=[];
- selected=null;
+ clearObjects();
  refreshList();
  syncFields();
  updateSelectionAppearance();
@@ -503,17 +510,17 @@ $('clear').addEventListener('click',()=>{
  updateRelationship();
  say('パーツをすべて消したよ');
 });
+$('undo').addEventListener('click',restoreHistory);
+$('undo').disabled=true;
 $('attach').addEventListener('click',()=>{
  if(!selected) return say('子にするパーツを先に選んでね');
- const parentId=Number($('parentSelect').value);
- const parent=objects.find(o=>o.userData.id===parentId);
+ const parent=objects.find(o=>o.userData.id===Number($('parentSelect').value));
  if(!parent) return say('親パーツを選択してね');
  if(parent===selected) return say('自分自身は親にできないよ');
  if(getDescendants(selected).includes(parent)){
   return say('子孫は親に指定できないよ');
  }
  saveHistory();
- // attachは見た目のワールド位置を保ったまま親の下に移す
  parent.attach(selected);
  refreshList();
  syncFields();
@@ -523,10 +530,8 @@ $('attach').addEventListener('click',()=>{
 });
 $('detach').addEventListener('click',()=>{
  if(!selected) return say('解除するパーツを選択してね');
- const parent=getParentObject(selected);
- if(!parent) return say('このパーツには親がいないよ');
+ if(!getParentObject(selected)) return say('このパーツには親がいないよ');
  saveHistory();
- // シーン直下へ戻し、ワールド位置・回転・大きさを保つ
  scene.attach(selected);
  refreshList();
  syncFields();
@@ -534,9 +539,7 @@ $('detach').addEventListener('click',()=>{
  updateRelationship();
  say('親子関係を解除したよ');
 });
-$('undo').addEventListener('click',restoreHistory);
-$('undo').disabled=true;
-// 指でパーツをドラッグして移動する
+// パーツのドラッグ移動
 function updatePointer(event){
  const rect=canvas.getBoundingClientRect();
  pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
@@ -552,7 +555,6 @@ function beginDrag(event){
  if(event.pointerType==='mouse' && event.button!==0) return;
  const hit=getHitObject(event);
  if(!hit) return;
- // パーツに触れた操作はOrbitControlsに渡さない
  event.preventDefault();
  event.stopPropagation();
  event.stopImmediatePropagation();
@@ -570,14 +572,8 @@ function beginDrag(event){
  }else{
   dragOffset.set(0,0,0);
  }
- dragState={
-  object:hit,
-  pointerId:event.pointerId,
-  moved:false
- };
- try{
-  canvas.setPointerCapture(event.pointerId);
- }catch(error){}
+ dragState={object:hit,pointerId:event.pointerId,moved:false};
+ try{canvas.setPointerCapture(event.pointerId)}catch(error){}
  say(hit.userData.label+' を移動中');
 }
 function moveDrag(event){
@@ -588,10 +584,7 @@ function moveDrag(event){
  if(!raycaster.ray.intersectPlane(dragPlane,dragHit)) return;
  dragWorldPoint.copy(dragHit).add(dragOffset);
  const obj=dragState.object;
- // 親がいる場合もワールド座標から正しいローカル座標に変換
- if(obj.parent){
-  obj.parent.worldToLocal(dragWorldPoint);
- }
+ if(obj.parent) obj.parent.worldToLocal(dragWorldPoint);
  obj.position.copy(dragWorldPoint);
  dragState.moved=true;
  syncFields();
@@ -613,6 +606,7 @@ canvas.addEventListener('pointermove',moveDrag,{passive:false});
 canvas.addEventListener('pointerup',endDrag);
 canvas.addEventListener('pointercancel',endDrag);
 canvas.addEventListener('lostpointercapture',endDrag);
+// カメラ
 $('front').addEventListener('click',()=>{
  camera.position.set(0,1.5,9);
  controls.target.set(0,1,0);
@@ -632,6 +626,180 @@ $('gridToggle').addEventListener('click',()=>{
  grid.visible=!grid.visible;
  say(grid.visible?'床グリッドを表示':'床グリッドを非表示');
 });
+// ファイルダウンロード
+function downloadBlob(blob,filename){
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ a.href=url;
+ a.download=filename;
+ a.style.display='none';
+ document.body.appendChild(a);
+ a.click();
+ a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+function makeFilename(extension){
+ const date=new Date();
+ const stamp=[
+  date.getFullYear(),
+  String(date.getMonth()+1).padStart(2,'0'),
+  String(date.getDate()).padStart(2,'0'),
+  '_',
+  String(date.getHours()).padStart(2,'0'),
+  String(date.getMinutes()).padStart(2,'0'),
+  String(date.getSeconds()).padStart(2,'0')
+ ].join('');
+ return 'my-character-'+stamp+'.'+extension;
+}
+// PNG画像書き出し
+$('exportPng').addEventListener('click',()=>{
+ try{
+  // 最新フレームを描画してから画像化
+  controls.update();
+  renderer.render(scene,camera);
+  canvas.toBlob(blob=>{
+   if(!blob){
+    say('画像を書き出せなかったよ');
+    return;
+   }
+   downloadBlob(blob,makeFilename('png'));
+   say('PNG画像を書き出したよ');
+  },'image/png');
+ }catch(error){
+  console.error(error);
+  say('画像を書き出せなかったよ');
+ }
+});
+// JSONモデル保存
+$('saveModel').addEventListener('click',()=>{
+ try{
+  scene.updateMatrixWorld(true);
+  const model={
+   format:'MyCharacterStudio',
+   version:1,
+   savedAt:new Date().toISOString(),
+   objects:objects.map(objectData)
+  };
+  const json=JSON.stringify(model,null,2);
+  const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+  downloadBlob(blob,makeFilename('json'));
+  say('モデルデータを保存したよ');
+ }catch(error){
+  console.error(error);
+  say('モデルデータを保存できなかったよ');
+ }
+});
+// JSONの内容を検証
+function validateModel(data){
+ if(!data || data.format!=='MyCharacterStudio'){
+  throw new Error('このファイルは対応しているモデルデータではないよ');
+ }
+ if(!Array.isArray(data.objects)){
+  throw new Error('パーツ一覧が見つからないよ');
+ }
+ if(data.objects.length>2000){
+  throw new Error('パーツ数が多すぎるよ');
+ }
+ const ids=new Set();
+ for(const d of data.objects){
+  if(!d || !Object.hasOwn(typeNames,d.type)){
+   throw new Error('未対応のパーツ形式が含まれているよ');
+  }
+  if(!Number.isInteger(d.id) || d.id<1 || ids.has(d.id)){
+   throw new Error('パーツIDが不正だよ');
+  }
+  ids.add(d.id);
+  for(const key of ['position','rotation','scale']){
+   if(!Array.isArray(d[key]) || d[key].length!==3 ||
+      !d[key].every(Number.isFinite)){
+    throw new Error('パーツの位置・回転・大きさのデータが不正だよ');
+   }
+  }
+  if(d.scale.some(n=>n<=0)){
+   throw new Error('大きさのデータが不正だよ');
+  }
+  if(typeof d.color!=='string' || !/^#[0-9a-fA-F]{6}$/.test(d.color)){
+   throw new Error('色のデータが不正だよ');
+  }
+  if(d.parentId!=null && !ids.has(d.parentId)){
+   // 親が後に記載される形式も許容するため、後段で全体検証する
+  }
+ }
+ for(const d of data.objects){
+  if(d.parentId!=null && (!Number.isInteger(d.parentId)||!ids.has(d.parentId))){
+   throw new Error('親パーツが見つからないよ');
+  }
+  if(d.parentId===d.id){
+   throw new Error('自分自身を親にすることはできないよ');
+  }
+ }
+ // 親子の循環を検出する
+ const byId=new Map(data.objects.map(d=>[d.id,d]));
+ for(const d of data.objects){
+  const seen=new Set();
+  let current=d;
+  while(current && current.parentId!=null){
+   if(seen.has(current.id)){
+    throw new Error('親子関係が循環しているよ');
+   }
+   seen.add(current.id);
+   current=byId.get(current.parentId);
+  }
+ }
+}
+// JSONモデル読み込み
+$('loadModel').addEventListener('click',()=>{
+ $('modelInput').click();
+});
+$('modelInput').addEventListener('change',async event=>{
+ const file=event.target.files?.[0];
+ if(!file) return;
+ try{
+  if(file.size>10*1024*1024){
+   throw new Error('ファイルが大きすぎるよ（上限10MB）');
+  }
+  const text=await file.text();
+  const data=JSON.parse(text);
+  validateModel(data);
+  // 現在の状態をUndo用に保存してから置き換える
+  saveHistory();
+  clearObjects();
+  const byId=new Map();
+  // まず全パーツを作る
+  for(const d of data.objects){
+   const o=createObject(d.type,{
+    id:d.id,
+    label:typeof d.label==='string'?d.label:typeNames[d.type]+' '+d.id,
+    color:d.color,
+    position:d.position,
+    rotation:d.rotation,
+    scale:d.scale
+   });
+   byId.set(d.id,o);
+  }
+  // 次に親子関係を復元する
+  for(const d of data.objects){
+   if(d.parentId==null) continue;
+   const child=byId.get(d.id);
+   const parent=byId.get(d.parentId);
+   parent.add(child);
+  }
+  nextId=Math.max(1,...data.objects.map(d=>d.id+1));
+  selected=null;
+  refreshList();
+  syncFields();
+  updateSelectionAppearance();
+  updateParentSelect();
+  updateRelationship();
+  say('モデルデータを読み込んだよ');
+ }catch(error){
+  console.error(error);
+  say(error.message || 'モデルデータを読み込めなかったよ');
+ }finally{
+  event.target.value='';
+ }
+});
+// 参考画像
 $('loadImage').addEventListener('click',()=>$('fileInput').click());
 $('fileInput').addEventListener('change',event=>{
  const file=event.target.files?.[0];
@@ -693,6 +861,7 @@ $('removeImage').addEventListener('click',()=>{
  referenceTexture=null;
  say('参考画像を削除したよ');
 });
+// 画面サイズ
 function resize(){
  const width=canvas.clientWidth;
  const height=canvas.clientHeight;

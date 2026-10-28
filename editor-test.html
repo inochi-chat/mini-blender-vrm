@@ -719,8 +719,16 @@ function createHuman(){
   controls.update();
 
   say("アニメキャラ風の人型モデルを作成したよ！");
-}
+　}
 
+  $("createHuman").addEventListener("click", () => {
+  try {
+    createHuman();
+  } catch (error) {
+    console.error("人型モデル作成エラー:", error);
+    say("人型モデル作成エラー: " + error.message);
+  }
+});
 /* ---------- Undo ---------- */
 
 function snapshotState(){

@@ -426,80 +426,300 @@ $("addCylinder").addEventListener("click",()=>addPrimitive("cylinder"));
 
 /* ---------- 人型モデル生成 ---------- */
 
+
+/* ---------- アニメキャラ風・人型モデル生成 ---------- */
+
 function createHuman(){
-  const type=$("bodyType").value;
-  const skin=$("skinColor").value;
-  const clothes=$("clothesColor").value;
-  const pants=$("pantsColor").value;
+  const type = $("bodyType").value;
+  const skin = $("skinColor").value;
+  const clothes = $("clothesColor").value;
+  const pants = $("pantsColor").value;
 
-  const slim=type==="slim";
-  const bigHead=type==="bighead";
+  const slim = type === "slim";
+  const bigHead = type === "bighead";
 
-  const sx = slim ? 0.82 : 1;
-  const headScale=bigHead?1.3:1;
+  const sx = slim ? 0.84 : 1;
+  const hs = bigHead ? 1.25 : 1;
 
-  // 既存オブジェクトを残し、Undoで一括復元できるようにする
   saveHistory();
 
-  const start=objects.length;
-  const n=nextObjectNumber;
+  const start = objects.length;
+  const n = nextObjectNumber;
 
-  // 座標のYが高さ。正面はZ方向。
-  addPart("人型"+n+"・胴体",
-    new THREE.BoxGeometry(.92*sx,1.25,.48),
-    clothes,[0,2.65,0]);
+  // 楕円形のパーツを作る
+  function oval(name, color, pos, size){
+    const g = new THREE.SphereGeometry(1, 24, 16);
+    g.scale(size[0], size[1], size[2]);
 
-  addPart("人型"+n+"・首",
-    new THREE.CylinderGeometry(.16,.18,.3,12),
-    skin,[0,3.43,0]);
+    return addPart(name, g, color, pos);
+  }
 
-  addPart("人型"+n+"・頭",
-    new THREE.SphereGeometry(.39*headScale,20,16),
-    skin,[0,3.95,0]);
+  // カプセル形状のパーツを作る
+  function capsule(name, color, pos, radius, length){
+    const g = new THREE.CapsuleGeometry(
+      radius, length, 6, 16
+    );
+    return addPart(name, g, color, pos);
+  }
 
-  // 腕：円柱は初期状態でY方向。Z軸を回して斜めにする。
-  const armL=addPart("人型"+n+"・左腕",
-    new THREE.CylinderGeometry(.13,.17,.95,12),
-    skin,[-.68,2.72,0]);
-  armL.rotation.z=-.18;
+  // ---------- 胴体 ----------
+  // 肩から胸にかけて
+  oval(
+    "人型"+n+"・上半身",
+    clothes,
+    [0, 2.82, 0],
+    [0.53*sx, 0.69, 0.32]
+  );
 
-  const armR=addPart("人型"+n+"・右腕",
-    new THREE.CylinderGeometry(.13,.17,.95,12),
-    skin,[.68,2.72,0]);
-  armR.rotation.z=.18;
+  // 腰
+  oval(
+    "人型"+n+"・腰",
+    clothes,
+    [0, 2.25, 0],
+    [0.39*sx, 0.39, 0.28]
+  );
 
-  addPart("人型"+n+"・左脚",
-    new THREE.CylinderGeometry(.19,.16,1.15,12),
-    pants,[-.25,1.35,0]);
+  // 骨盤
+  oval(
+    "人型"+n+"・骨盤",
+    pants,
+    [0, 1.94, 0],
+    [0.46*sx, 0.29, 0.30]
+  );
 
-  addPart("人型"+n+"・右脚",
-    new THREE.CylinderGeometry(.19,.16,1.15,12),
-    pants,[.25,1.35,0]);
+  // 首
+  capsule(
+    "人型"+n+"・首",
+    skin,
+    [0, 3.48, 0],
+    0.14, 0.12
+  );
 
-  addPart("人型"+n+"・左足",
-    new THREE.BoxGeometry(.3,.2,.52),
-    pants,[-.25,.77,.12]);
+  // ---------- 頭 ----------
+  const head = oval(
+    "人型"+n+"・頭",
+    skin,
+    [0, 4.02, 0],
+    [0.43*hs, 0.57*hs, 0.37*hs]
+  );
 
-  addPart("人型"+n+"・右足",
-    new THREE.BoxGeometry(.3,.2,.52),
-    pants,[.25,.77,.12]);
+  // ---------- 顔 ----------
+  // 正面はZのプラス方向
+  const faceZ = 0.345 * hs;
+
+  // 耳
+  oval(
+    "人型"+n+"・左耳",
+    skin,
+    [-0.425*hs, 3.99, 0],
+    [0.105*hs, 0.15*hs, 0.09*hs]
+  );
+
+  oval(
+    "人型"+n+"・右耳",
+    skin,
+    [0.425*hs, 3.99, 0],
+    [0.105*hs, 0.15*hs, 0.09*hs]
+  );
+
+  // 白目
+  for(const side of [-1, 1]){
+    oval(
+      "人型"+n+(side<0?"・左白目":"・右白目"),
+      "#fff8f0",
+      [side*0.165*hs, 4.045, faceZ],
+      [0.105*hs, 0.135*hs, 0.045*hs]
+    );
+
+    // 虹彩
+    oval(
+      "人型"+n+(side<0?"・左目":"・右目"),
+      "#527db8",
+      [side*0.165*hs, 4.04, faceZ+0.037*hs],
+      [0.060*hs, 0.085*hs, 0.025*hs]
+    );
+
+    // 瞳
+    oval(
+      "人型"+n+(side<0?"・左瞳":"・右瞳"),
+      "#25283c",
+      [side*0.165*hs, 4.04, faceZ+0.058*hs],
+      [0.030*hs, 0.052*hs, 0.014*hs]
+    );
+
+    // 眉
+    const brow = capsule(
+      "人型"+n+(side<0?"・左眉":"・右眉"),
+      "#60473e",
+      [side*0.165*hs, 4.205, faceZ-0.015*hs],
+      0.022*hs,
+      0.09*hs
+    );
+    brow.rotation.z = side * 0.12;
+  }
+
+  // 鼻
+  oval(
+    "人型"+n+"・鼻",
+    "#dba28b",
+    [0, 3.91, faceZ+0.065*hs],
+    [0.045*hs, 0.065*hs, 0.045*hs]
+  );
+
+  // 口
+  oval(
+    "人型"+n+"・口",
+    "#a95761",
+    [0, 3.77, faceZ+0.035*hs],
+    [0.085*hs, 0.025*hs, 0.018*hs]
+  );
+
+  // ---------- 肩・腕・手 ----------
+  for(const side of [-1, 1]){
+    const label = side < 0 ? "左" : "右";
+    const armX = side * 0.66 * sx;
+
+    // 肩
+    oval(
+      "人型"+n+"・"+label+"肩",
+      clothes,
+      [side*0.48*sx, 3.10, 0],
+      [0.22*sx, 0.23, 0.24]
+    );
+
+    // 上腕
+    const upperArm = capsule(
+      "人型"+n+"・"+label+"腕",
+      skin,
+      [armX, 2.78, 0],
+      0.125,
+      0.43
+    );
+    upperArm.rotation.z = side * 0.12;
+
+    // 肘
+    oval(
+      "人型"+n+"・"+label+"肘",
+      skin,
+      [side*0.70*sx, 2.48, 0],
+      [0.13, 0.14, 0.13]
+    );
+
+    // 前腕
+    const forearm = capsule(
+      "人型"+n+"・"+label+"前腕",
+      skin,
+      [side*0.73*sx, 2.28, 0],
+      0.105,
+      0.28
+    );
+    forearm.rotation.z = side * 0.10;
+
+    // 手のひら
+    oval(
+      "人型"+n+"・"+label+"手",
+      skin,
+      [side*0.75*sx, 2.045, 0.015],
+      [0.115, 0.14, 0.075]
+    );
+
+    // 指を簡略化して追加
+    for(let finger=0; finger<4; finger++){
+      capsule(
+        "人型"+n+"・"+label+"指"+(finger+1),
+        skin,
+        [
+          side*(0.675 + finger*0.048)*sx,
+          1.93,
+          0.035
+        ],
+        0.022,
+        0.065
+      );
+    }
+
+    // 親指
+    const thumb = capsule(
+      "人型"+n+"・"+label+"親指",
+      skin,
+      [side*0.64*sx, 2.01, 0.045],
+      0.026,
+      0.07
+    );
+    thumb.rotation.z = side * 0.65;
+  }
+
+  // ---------- 脚・膝・足 ----------
+  for(const side of [-1, 1]){
+    const label = side < 0 ? "左" : "右";
+    const legX = side * 0.245 * sx;
+
+    // 太もも
+    capsule(
+      "人型"+n+"・"+label+"太もも",
+      pants,
+      [legX, 1.48, 0],
+      0.19*sx,
+      0.42
+    );
+
+    // 膝
+    oval(
+      "人型"+n+"・"+label+"膝",
+      pants,
+      [legX, 1.12, 0],
+      [0.17*sx, 0.17, 0.18]
+    );
+
+    // すね
+    capsule(
+      "人型"+n+"・"+label+"すね",
+      pants,
+      [legX, 0.91, 0],
+      0.125*sx,
+      0.22
+    );
+
+    // 足首
+    capsule(
+      "人型"+n+"・"+label+"足首",
+      skin,
+      [legX, 0.70, 0],
+      0.09,
+      0.08
+    );
+
+    // 足先：前方向に長い楕円形
+    oval(
+      "人型"+n+"・"+label+"足",
+      pants,
+      [legX, 0.60, 0.14],
+      [0.17*sx, 0.105, 0.31]
+    );
+  }
 
   nextObjectNumber++;
 
-  selectedObject=objects[start];
-  selectedComponent=null;
+  selectedObject = objects[start] || null;
+  selectedComponent = null;
+  mode = "object";
+
+  document.querySelectorAll("[data-mode]").forEach(button=>{
+    button.classList.toggle(
+      "active",
+      button.dataset.mode === "object"
+    );
+  });
 
   updateObjectList();
   updateHelpers();
 
-  controls.target.set(0,2.25,0);
-  camera.position.set(5,4.5,8);
+  controls.target.set(0, 2.25, 0);
+  camera.position.set(5, 4.5, 8);
   controls.update();
 
-  say("人型モデルを作成したよ！ 一覧から各パーツを選べるよ。");
+  say("アニメキャラ風の人型モデルを作成したよ！");
 }
-
-$("createHuman").addEventListener("click",createHuman);
 
 /* ---------- Undo ---------- */
 

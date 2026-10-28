@@ -319,7 +319,7 @@ function createHuman(){
  const pants=$("pantsColor").value;
  const slim=type==="slim";
  const big=type==="bighead";
- const sx=slim?.82:1;
+ const sx = slim ? 0.82 : 1;
  const hs=big?1.22:1;
  const root=makeBone("root",rigRoot,[0,1.78,0]);
  rig=root;
@@ -380,7 +380,7 @@ function createHuman(){
   makeLimbSegment("人体・"+side+"すね",pants,knee,.60,.105*sx);
   const ankle=makeBone(s<0?"ankleL":"ankleR",knee,[0,-.60,0]);
   capsulePart("人体・"+side+"足首",skin,ankle,.13,.075,[0,-.07,0]);
-  addMesh("人体・"+side+"足",pants,ovalGeometry(.14,.085,.27),ankle,[0,-.12,.14]);
+  addMesh("人体・"+side+"足",ovalGeometry(.14,.085,.27),pants,ankle,[0,-.12,.14]);
  }
 
  buildBoneGuide();

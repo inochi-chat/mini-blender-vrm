@@ -135,6 +135,32 @@ input[type=file]{display:none}
       </div>
     </section>
 
+    
+    <section class="section">
+      <div class="section-title">⑤ ポーズ編集・回転</div>
+      <div class="row">
+        <select id="rotationAngle" aria-label="回転角度">
+          <option value="15">15° 回転</option>
+          <option value="45" selected>45° 回転</option>
+          <option value="90">90° 回転</option>
+        </select>
+        <button id="resetRotation">回転リセット</button>
+      </div>
+      <div class="small">一覧から頭・腕・脚などを選んでから操作してね。</div>
+      <div class="row">
+        <button id="rotXMinus">X − 回転</button>
+        <button id="rotXPlus">X ＋ 回転</button>
+      </div>
+      <div class="row">
+        <button id="rotYMinus">Y − 回転</button>
+        <button id="rotYPlus">Y ＋ 回転</button>
+      </div>
+      <div class="row">
+        <button id="rotZMinus">Z − 回転</button>
+        <button id="rotZPlus">Z ＋ 回転</button>
+      </div>
+    </section>
+
     <section class="section">
       <div class="section-title">⑤ 面の加工</div>
       <div class="row">
@@ -821,6 +847,54 @@ function scaleSelection(factor){
 
 $("scaleDown").addEventListener("click",()=>scaleSelection(.9));
 $("scaleUp").addEventListener("click",()=>scaleSelection(1.1));
+
+  
+/* ---------- ポーズ編集・回転 ---------- */
+
+function rotateSelection(axis, direction) {
+  if (!selectedObject) {
+    say("先に一覧からパーツを選んでね。");
+    return;
+  }
+
+  const degrees = Number($("rotationAngle").value);
+  const radians = THREE.MathUtils.degToRad(degrees);
+
+  saveHistory();
+
+  selectedObject.rotation[axis] += radians * direction;
+
+  updateHelpers();
+  say(selectedObject.name + "を" + axis.toUpperCase() +
+      "軸に" + (direction > 0 ? "+" : "-") +
+      degrees + "°回転したよ。");
+}
+
+[
+  ["rotXMinus", "x", -1],
+  ["rotXPlus",  "x",  1],
+  ["rotYMinus", "y", -1],
+  ["rotYPlus",  "y",  1],
+  ["rotZMinus", "z", -1],
+  ["rotZPlus",  "z",  1]
+].forEach(([id, axis, direction]) => {
+  $(id).addEventListener("click", () => {
+    rotateSelection(axis, direction);
+  });
+});
+
+$("resetRotation").addEventListener("click", () => {
+  if (!selectedObject) {
+    say("先に一覧からパーツを選んでね。");
+    return;
+  }
+
+  saveHistory();
+  selectedObject.rotation.set(0, 0, 0);
+
+  updateHelpers();
+  say(selectedObject.name + "の回転をリセットしたよ。");
+});
 
 /* ---------- ジオメトリ加工 ---------- */
 

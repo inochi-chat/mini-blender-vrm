@@ -101,6 +101,28 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:10px 12px 25p
     <button id="cropMode" class="small">＋ パーツ切り出し</button>
   </div>
 
+  
+<div class="panel" style="margin-top:12px">
+  <h2>画像加工ツール</h2>
+  <div class="row">
+    <button id="brushErase">消しゴム</button>
+    <button id="brushRestore">復元ブラシ</button>
+    <button id="brushOff" class="active">通常操作</button>
+  </div>
+  <div class="field">
+    <label for="brushSize">ブラシの太さ</label>
+    <input id="brushSize" type="range" min="2" max="100" value="24">
+  </div>
+  <div class="row">
+    <button id="undoEdit">↶ 元に戻す</button>
+    <button id="redoEdit">↷ やり直す</button>
+  </div>
+  <p class="hint">
+    消しゴムと復元ブラシは元画像を加工するよ。
+    復元ブラシは読み込み直後の画像を基準にするよ。
+  </p>
+</div>
+
   <div class="workspace" style="margin-top:12px">
     <canvas id="stage" width="600" height="600"></canvas>
   </div>
@@ -200,6 +222,119 @@ const stage = $("stage");
 const ctx = stage.getContext("2d");
 const sourceCanvas = document.createElement("canvas");
 const sourceCtx = sourceCanvas.getContext("2d");
+
+const originalCanvas = document.createElement("canvas");
+const originalCtx = originalCanvas.getContext("2d");
+
+let originalImageData = null;
+let brushMode = "off";
+let brushDrawing = false;
+let editUndo = [];
+let editRedo = [];
+const MAX_EDIT_HISTORY = 12;
+
+function saveEditHistory() {
+  editUndo.push(sourceCtx.getImageData(
+    0, 0, sourceCanvas.width, sourceCanvas.height
+  ));
+  if (editUndo.length > MAX_EDIT_HISTORY) editUndo.shift();
+  editRedo = [];
+}
+
+function restoreEditImage(imageData) {
+  
+sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
+
+originalCanvas.width = sourceCanvas.width;
+originalCanvas.height = sourceCanvas.height;
+originalCtx.clearRect(0, 0, originalCanvas.width, originalCanvas.height);
+originalCtx.drawImage(img, 0, 0, originalCanvas.width, originalCanvas.height);
+
+originalImageData = canvasToDataURL(originalCanvas);
+baseImageData = canvasToDataURL(sourceCanvas);
+
+editUndo = [];
+editRedo = [];
+
+  render();
+}
+
+function selectBrush(mode) {
+  brushMode = mode;
+  $("brushErase").classList.toggle("active", mode === "erase");
+  $("brushRestore").classList.toggle("active", mode === "restore");
+  $("brushOff").classList.toggle("active", mode === "off");
+
+  $("canvasHint").textContent =
+    mode === "erase" ? "画像をなぞって透明にするよ。" :
+    mode === "restore" ? "画像をなぞって元の画像を復元するよ。" :
+    "通常操作：パーツの選択・移動や範囲切り出しができるよ。";
+}
+
+$("brushErase").addEventListener("click", () => {
+  setCropMode(false);
+  selectBrush("erase");
+});
+
+$("brushRestore").addEventListener("click", () => {
+  setCropMode(false);
+  selectBrush("restore");
+});
+
+$("brushOff").addEventListener("click", () => {
+  selectBrush("off");
+});
+
+$("undoEdit").addEventListener("click", () => {
+  if (!editUndo.length) {
+    say("元に戻せる加工がないよ。");
+    return;
+  }
+
+  editRedo.push(sourceCtx.getImageData(
+    0, 0, sourceCanvas.width, sourceCanvas.height
+  ));
+  restoreEditImage(editUndo.pop());
+  say("画像加工を元に戻したよ。");
+});
+
+$("redoEdit").addEventListener("click", () => {
+  if (!editRedo.length) {
+    say("やり直せる加工がないよ。");
+    return;
+  }
+
+  editUndo.push(sourceCtx.getImageData(
+    0, 0, sourceCanvas.width, sourceCanvas.height
+  ));
+  restoreEditImage(editRedo.pop());
+  say("画像加工をやり直したよ。");
+});
+
+function paintBrush(point) {
+  const size = Number($("brushSize").value);
+
+  sourceCtx.save();
+  sourceCtx.beginPath();
+  sourceCtx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
+  sourceCtx.closePath();
+
+  if (brushMode === "erase") {
+    sourceCtx.globalCompositeOperation = "destination-out";
+    sourceCtx.fill();
+  } else if (brushMode === "restore") {
+    sourceCtx.globalCompositeOperation = "source-over";
+    sourceCtx.drawImage(
+      originalCanvas,
+      point.x - size / 2, point.y - size / 2, size, size,
+      point.x - size / 2, point.y - size / 2, size, size
+    );
+  }
+
+  sourceCtx.restore();
+  baseImageData = canvasToDataURL(sourceCanvas);
+  render();
+}
 
 let baseImageData = null;
 let parts = [];
@@ -368,7 +503,28 @@ stage.addEventListener("pointerdown", e => {
 });
 
 stage.addEventListener("pointermove", e => {
+  
+if (brushDrawing) {
+  brushDrawing = false;
+  say(brushMode === "erase"
+    ? "透明化したよ。"
+    : "元画像から復元したよ。");
+  return;
+}
+
   const pt = pointerPosition(e);
+
+if (brushMode !== "off" && !cropMode) {
+  saveEditHistory();
+  brushDrawing = true;
+  paintBrush(pt);
+  return;
+}
+
+if (brushDrawing && brushMode !== "off") {
+  paintBrush(pt);
+  return;
+}
 
   if (cropMode && pointerStart) {
     pointerNow = pt;
